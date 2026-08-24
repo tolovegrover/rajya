@@ -6,6 +6,7 @@ import { useGame, useSettings, useLang } from '../store';
 import { CHARACTERS } from '../data/characters';
 import { LanguageBar } from '../components/LanguageBar';
 import { testConnection } from '../llm/adapters';
+import { SupportBlock } from '../components/SupportBlock';
 import { t } from '../i18n';
 
 const COMPAT_PRESETS = [
@@ -203,6 +204,8 @@ export function SettingsScreen() {
             ))}
           </>
         )}
+
+        <SupportBlock />
 
         <Pressable style={s.done} onPress={() => setScreen(hasGame ? 'game' : 'title')}>
           <Text style={s.doneText}>{t('common.done')} ▸</Text>
