@@ -8,17 +8,16 @@
     "backgroundColor": "#0b0f1a",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.nations.rajya",
-      "infoPlist": {
-        "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
-        }
-      }
+      "bundleIdentifier": "com.nations.rajya"
     },
     "android": {
       "package": "com.nations.rajya",
+      "versionCode": 1,
       "usesCleartextTraffic": true,
-      "softwareKeyboardLayoutMode": "pan"
+      "softwareKeyboardLayoutMode": "pan",
+      "compileSdkVersion": 35,
+      "targetSdkVersion": 35,
+      "buildToolsVersion": "35.0.0"
     },
     "plugins": [
       "expo-asset"

@@ -2,12 +2,21 @@ node_modules/
 .expo/
 dist/
 web-build/
+.simbuild/
 *.log
 .DS_Store
-.simbuild/
-android/
-ios/
+
+# native build outputs (sources are tracked)
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+
+# secrets — never commit
 keystore.properties
+android/keystore.properties
 *.jks
 *.keystore
 service-account*.json
+*-firebase-adminsdk-*.json
+.env*
