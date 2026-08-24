@@ -33,6 +33,7 @@ export function claudeClient(settings: LLMSettings, model: string): LLMClient {
           'content-type': 'application/json',
           'x-api-key': settings.anthropicKey,
           'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
           model,

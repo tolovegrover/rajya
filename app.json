@@ -21,6 +21,10 @@
     },
     "plugins": [
       "expo-asset"
-    ]
+    ],
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    }
   }
 }
