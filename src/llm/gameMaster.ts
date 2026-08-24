@@ -5,7 +5,7 @@ import { runWithRescue } from './refusalRescue';
 import { fallbackBeat } from './fallback';
 import { etaFor } from '../engine/resolver';
 export interface GMContext {
-  kind: 'action' | 'ambient' | 'riot' | 'royal' | 'election' | 'chaos';
+  kind: 'action' | 'ambient' | 'riot' | 'royal' | 'election' | 'chaos' | 'ending';
   region: string;
   actionLabel?: string;
   /** The player's own words, when they improvised instead of tapping an action. */
@@ -102,7 +102,7 @@ export async function askGameMaster(
   onRescue: (entry: { tier: number; note: string; originalRequest: string }) => void
 ): Promise<BeatResult> {
   const fb = fallbackBeat(s, ctx);
-  const useFlash = ctx.kind !== 'action';
+  const useFlash = ctx.kind !== 'action' && ctx.kind !== 'ending';
   const client: LLMClient | null = (useFlash ? flashClient(settings) : null) ?? mainClient(settings);
   if (!client) return fb;
 
@@ -131,7 +131,9 @@ export async function askGameMaster(
     settings.gmDirective ? `\nGAME MASTER DIRECTIVE FROM THE PLAYER: ${settings.gmDirective}` : '',
   ].join('\n');
 
-  const eventText = ctx.freeText
+  const eventText = ctx.kind === 'ending'
+    ? `THE CAMPAIGN IS OVER after ${s.turn} weeks. The engine has ruled: "${ctx.resolverHeadline ?? ''}". Write the epilogue for THIS republic — 4 to 6 sentences in "beat", naming what the player actually did to the map and what it cost. No ops, no dilemma; the game is finished.`
+    : ctx.freeText
     ? `PLAYER'S OWN MOVE (${s.role}) targeting ${rg.name} (${rg.id}). They typed, in their own words:\n"""${ctx.freeText.slice(0, 400)}"""\nResolver verdict: ${ctx.resolverHeadline ?? ''}\nJudge it as a game master would: honour what their role and resources plausibly allow, let overreach half-work or backfire, and never simply hand them power they have not built. Narrate the consequence, emit the ops it implies, and include a "dilemma" with 2-3 options so the move forks.`
     : ctx.kind === 'action'
       ? `PLAYER ACTION (${s.role}): "${ctx.actionLabel}" targeting ${rg.name} (${rg.id}). Resolver verdict: ${ctx.resolverHeadline ?? ''}`

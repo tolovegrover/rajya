@@ -106,17 +106,20 @@ check('ramp: opening moves resolve into real ops', Object.entries(ACTIONS).every
   return out.headline.length > 0 && out.ops.length > 0;
 }));
 let riots = 0;
+let openings = 0;
 for (const eta of [0.5, 0.9]) {
   for (let run = 0; run < 12; run++) {
     let s = createGame('strategist', eta);
-    for (let i = 0; i < 6; i++) {
+    openings++;
+    while (phaseOf(s.turn) === 0) {              // chapter 0 only: riots belong to chapter 1
       const { state: ticked, ops } = tick(s);
+      if (phaseOf(ticked.turn) > 0) break;
       riots += ops.filter((o) => o.op === 'riot' || o.op === 'restoreroyal').length;
       s = applyOps(ticked, ops).state;
     }
   }
 }
-check(`ramp: the first weeks stay calm (${riots} riots/thrones in 24 openings)`, riots === 0);
+check(`ramp: chapter 0 never burns (${riots} riots/thrones across ${openings} openings)`, riots === 0);
 
 
 // --- free-text moves & score ---
@@ -135,5 +138,14 @@ for (const role of ['strategist', 'agitator', 'royalist', 'oligarch']) {
   if (!(scoreOf(s0) >= 0 && scoreOf(s0) <= 1000)) check(`score: ${role} in range`, false);
 }
 check('score: every role scores in range', true);
+
+
+// --- a republic that differs every campaign ---
+const openings2 = Array.from({ length: 8 }, () => createGame('strategist', 0.5));
+const fingerprints = new Set(openings2.map((g) => Object.values(g.regions).map((r) => Math.round(r.unrest)).join(',')));
+check(`world: no two campaigns open identically (${fingerprints.size}/8 distinct)`, fingerprints.size === 8);
+const hottest0 = openings2.map((g) => Object.values(g.regions).sort((a, b) => b.unrest - a.unrest)[0].id);
+check(`world: the flashpoints move between campaigns (${new Set(hottest0).size} different hot spots)`, new Set(hottest0).size > 1);
+check('world: nobody opens already burning', openings2.every((g) => Object.values(g.regions).every((r) => r.unrest <= 80)));
 
 process.exit(failures ? 1 : 0);

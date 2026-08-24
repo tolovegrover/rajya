@@ -22,7 +22,7 @@ const vars = (s: GameState, region: string) => {
 
 export function fallbackBeat(
   s: GameState,
-  ctx: { kind: 'action' | 'ambient' | 'riot' | 'royal' | 'election' | 'chaos'; region: string; actionLabel?: string; resolverHeadline?: string; resolverOps: WorldOp[] }
+  ctx: { kind: 'action' | 'ambient' | 'riot' | 'royal' | 'election' | 'chaos' | 'ending'; region: string; actionLabel?: string; resolverHeadline?: string; resolverOps: WorldOp[] }
 ): BeatResult {
   const rg = s.regions[ctx.region] ?? Object.values(s.regions)[0];
   let tpl: BeatTemplate;

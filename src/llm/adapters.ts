@@ -148,6 +148,8 @@ export function mainClient(settings: LLMSettings): LLMClient | null {
   return null;
 }
 
+export const hasAI = (settings: LLMSettings): boolean => !!mainClient(settings);
+
 export function flashClient(settings: LLMSettings): LLMClient | null {
   if (settings.provider === 'anthropic' && settings.anthropicKey) {
     const m = settings.flashModel || settings.anthropicModel || 'claude-haiku-4-5';

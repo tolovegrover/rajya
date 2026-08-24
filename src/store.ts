@@ -9,6 +9,7 @@ import { applyOps, opTitle } from './engine/reducer';
 import { resolveAction, resolveFreeMove, FREE_MOVE_COST, ACTIONS, phaseOf } from './engine/resolver';
 import { tick } from './engine/tick';
 import { askGameMaster, GMContext } from './llm/gameMaster';
+import { hasAI } from './llm/adapters';
 import { fallbackBeat } from './llm/fallback';
 
 const SETTINGS_KEY = 'rajya_settings_v1';
@@ -123,6 +124,7 @@ interface GameStore {
   runTick: () => void;
   doAction: (actionId: string) => Promise<void>;
   doFreeMove: (text: string) => Promise<void>;
+  requestEnding: () => Promise<void>;
   requestBeat: (kind: GMContext['kind'], region: string, actionLabel?: string, resolverHeadline?: string, resolverOps?: WorldOp[], freeText?: string) => Promise<void>;
   chooseDilemma: (index: number) => void;
   pushOps: (ops: WorldOp[]) => void;
@@ -244,6 +246,7 @@ export const useGame = create<GameStore>((set, get) => ({
       set({ state: s2 });
       void AsyncStorage.setItem(LAST_CHRONICLE_KEY, JSON.stringify(s2.eventLog.slice(-600))).catch(() => undefined);
       set({ screen: 'ending', lastChronicle: s2.eventLog });
+      void get().requestEnding();
       return;
     }
     const grew = phaseOf(s2.turn) > phaseOf(state.turn);
@@ -283,7 +286,9 @@ export const useGame = create<GameStore>((set, get) => ({
       state: s,
       thinking: true,
       fx: [...get().fx, ...newFx].slice(-24),
-      ticker: [outcome.headline.toUpperCase().slice(0, 90), ...get().ticker].slice(0, 12),
+      ticker: hasAI(useSettings.getState().settings)
+        ? get().ticker
+        : [outcome.headline.toUpperCase().slice(0, 90), ...get().ticker].slice(0, 12),
     });
     const label = t(`act.${actionId}`, {}, ACTIONS[state.role].find((a) => a.id === actionId)?.label ?? actionId);
     await get().requestBeat('action', targetRegion, label, outcome.headline, outcome.ops);
@@ -302,9 +307,32 @@ export const useGame = create<GameStore>((set, get) => ({
       state: s,
       thinking: true,
       fx: [...get().fx, ...fxFromOps(applied.applied, s.turn)].slice(-24),
-      ticker: [outcome.headline.toUpperCase().slice(0, 90), ...get().ticker].slice(0, 12),
+      ticker: hasAI(useSettings.getState().settings)
+        ? get().ticker
+        : [outcome.headline.toUpperCase().slice(0, 90), ...get().ticker].slice(0, 12),
     });
     await get().requestBeat('action', targetRegion, said.slice(0, 80), outcome.headline, outcome.ops, said);
+  },
+
+  async requestEnding() {
+    const s = get().state;
+    const settings = useSettings.getState().settings;
+    if (!s || !s.ending || !hasAI(settings)) return;
+    set({ thinking: true });
+    try {
+      const result = await askGameMaster(
+        s,
+        settings,
+        { kind: 'ending', region: hottest(s), resolverHeadline: s.ending.title, resolverOps: [] },
+        (entry) => get().log({ turn: s.turn, tier: entry.tier, note: entry.note, originalRequest: entry.originalRequest.slice(0, 400) })
+      );
+      const text = result.beat.trim();
+      const cur = get().state;
+      if (cur?.ending && text.length > 40) set({ state: { ...cur, ending: { ...cur.ending, text } } });
+    } catch {
+      /* the engine's own ending already stands */
+    }
+    set({ thinking: false });
   },
 
   async requestBeat(kind, region, actionLabel?, resolverHeadline?, resolverOps = [], freeText?) {
@@ -337,6 +365,7 @@ export const useGame = create<GameStore>((set, get) => ({
       if (s2.ending) {
         void AsyncStorage.setItem(LAST_CHRONICLE_KEY, JSON.stringify(s2.eventLog.slice(-600))).catch(() => undefined);
         set({ screen: 'ending', lastChronicle: s2.eventLog, thinking: false });
+        void get().requestEnding();
         return;
       }
       const isAmbient = kind === 'ambient' && !result.dilemma;
