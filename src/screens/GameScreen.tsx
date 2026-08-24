@@ -48,7 +48,7 @@ export function GameScreen() {
       {sel && (
         <View style={s.infoBar}>
           <View style={{ flex: 1 }}>
-            <Text style={s.infoName}>{sel.kingdom ? '♛ ' : ''}{sel.name} · {sel.city}</Text>
+            <Text style={s.infoName}>{sel.kingdom ? '♛ ' : ''}{t(`rg.${sel.id}`, {}, sel.name)} · {t(`city.${sel.id}`, {}, sel.city)}</Text>
             <Text style={s.infoStats}>
               {t('game.unrest')} {Math.round(sel.unrest)} · {t('game.quota')} {Math.round(sel.reservationHeat)} · {t('game.land')} {Math.round(sel.landHeat)} · {t('game.royalist')} {Math.round(sel.royalist)}{sel.curfew ? ` · ${t('game.curfew')}` : ''}{sel.army ? ` · ${t('game.army')}` : ''}
             </Text>
@@ -82,7 +82,7 @@ export function GameScreen() {
         <View style={s.footRow}>
           <Pressable onPress={() => setScreen('codex')}><Text style={s.footBtn}>{t('game.codex')}</Text></Pressable>
           <Pressable onPress={() => setScreen('settings')}><Text style={s.footBtn}>{t('title.ai')}</Text></Pressable>
-          <Text style={s.target}>{t('game.target')}: {state.regions[targetRegion]?.name ?? '—'}</Text>
+          <Text style={s.target}>{t('game.target')}: {t(`rg.${targetRegion}`, {}, state.regions[targetRegion]?.name ?? '—')}</Text>
           {rescueLog.length > 0 && <Text style={s.rescue}>🛟 {rescueLog.length}</Text>}
         </View>
       </View>

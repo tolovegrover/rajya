@@ -89,7 +89,7 @@ export function IndiaMap({
               {live.kingdom && <SvgText x={g.center[0]} y={g.center[1] - 14} fontSize={18} textAnchor="middle" fill="#ffe08a">♛</SvgText>}
               {live.army && <Circle cx={g.cityAt[0] + 12} cy={g.cityAt[1] - 12} r={5} fill="#7aa35a" stroke="#0b0f1a" strokeWidth={1} />}
               <Circle cx={g.cityAt[0]} cy={g.cityAt[1]} r={3} fill="#dfe3ee" opacity={0.9} />
-              <SvgText x={g.cityAt[0] + 5} y={g.cityAt[1] + 3} fontSize={9} fill="#cfd6e4" opacity={0.85}>{live.city}</SvgText>
+              <SvgText x={g.cityAt[0] + 5} y={g.cityAt[1] + 3} fontSize={9} fill="#cfd6e4" opacity={0.85}>{t(`city.${id}`, {}, live.city)}</SvgText>
             </G>
           );
         })}

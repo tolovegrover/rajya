@@ -22,7 +22,7 @@ export function EndingScreen() {
         <Text style={s.stat}>{t('stat.legitimacy')}: {Math.round(state.legitimacy)} · {t('stat.stability')}: {Math.round(state.stability)}</Text>
         <Text style={s.stat}>{t('endscr.royalpop')}: {state.royalPopPct}%</Text>
         <Text style={s.stat}>{t('endscr.role')}: {t(`role.${state.role}.name`, {}, role?.name ?? '')} · {t('stat.influence')} {Math.round(state.influence)}</Text>
-        <Text style={s.stat}>{t('endscr.rajyas')}: {Object.values(state.regions).filter((r) => r.kingdom).map((r) => r.name).join(', ') || t('endscr.none')}</Text>
+        <Text style={s.stat}>{t('endscr.rajyas')}: {Object.values(state.regions).filter((r) => r.kingdom).map((r) => t(`rg.${r.id}`, {}, r.name)).join(', ') || t('endscr.none')}</Text>
       </View>
       <Text style={s.logTitle}>{t('endscr.how')}</Text>
       {state.eventLog.slice(-8).reverse().map((e, i) => (
