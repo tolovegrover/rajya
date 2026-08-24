@@ -1,0 +1,13 @@
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+.DS_Store
+.simbuild/
+android/
+ios/
+keystore.properties
+*.jks
+*.keystore
+service-account*.json
