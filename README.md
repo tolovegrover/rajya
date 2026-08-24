@@ -8,6 +8,21 @@ animated map changes, never just text. Fully playable offline without any API ke
 > Fiction. Satire. All characters (Moni, Amir Sahab, Raul Baba, the Maharaja…) and places
 > are invented parodies. See the in-game disclaimer.
 
+## Languages
+
+The game **opens in Hindi**. The interface ships in 13 languages — हिन्दी, English, বাংলা,
+मराठी, తెలుగు, தமிழ், ગુજરાતી, اردو, ಕನ್ನಡ, മലയാളം, ਪੰਜਾਬੀ, ଓଡ଼ିଆ, অসমীয়া — switchable
+from the title screen or AI SETUP.
+
+- **Hindi is fully localized**: region and city names, royal titles, factions, the whole
+  cast with their personas, action outcomes, weekly events and all six endings.
+- **Other languages** get the full interface; proper names stay in their original form and
+  the offline story text falls back to English.
+- **With an API key the AI narrates in your chosen language** automatically. The
+  *AI narration language* box overrides it with anything you type — Bhojpuri, Awadhi,
+  Hinglish, Marathi — and personas can be written in any language too; the Game Master
+  keeps that voice and still narrates in the game language.
+
 ## Quick start
 
 ```bash
@@ -31,9 +46,10 @@ The game ships three narrator modes (Settings → AI SETUP, keys are stored on-d
 |---|---|
 | **Claude** | Anthropic API key (`sk-ant-…`), model e.g. `claude-sonnet-4-5` |
 | **Gemini** | Google AI Studio key (`AIza…`), model e.g. `gemini-2.0-flash` |
-| **Compatible** | Any OpenAI-compatible endpoint: opencode Zen, OpenRouter, OpenAI, Groq, DeepSeek, Mistral, Together, LM Studio… base URL + key + model |
+| **Compatible** | Any OpenAI-compatible endpoint: opencode Zen, OpenRouter, OpenAI, Groq, DeepSeek, Mistral, Together, xAI Grok, Perplexity, Fireworks, Cerebras, Sarvam, GitHub Models, Ollama, LM Studio… base URL + key + model |
 | **Offline** | Nothing — the procedural engine runs beats, dilemmas and endings locally |
 
+- **TEST CONNECTION** in AI SETUP checks the key and model before you start a campaign.
 - Two model slots: **main** (beats & dilemmas) and **flash** (ambient ticker noise) — use a
   cheap model for ambience, a strong one for drama.
 - **Character AI**: every leader has an editable persona (Settings → Personas). Rewrite
@@ -61,7 +77,7 @@ Core loop: 1 week per 6 seconds · 28 regions · 4 player roles · 6 endings. Ch
 
 ```bash
 npm run typecheck   # strict TS
-npm run sim         # headless simulation: 12 full campaigns + 25 engine/LLM-parsing tests
+npm run sim         # headless simulation: 12 full campaigns + engine/LLM/i18n tests
 ```
 
 Docs: [Game Design](docs/GDD.md) · [Architecture](docs/ARCHITECTURE.md) · [Prompt System](docs/PROMPTS.md)
