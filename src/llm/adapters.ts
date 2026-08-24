@@ -95,8 +95,46 @@ export function compatClient(baseUrl: string, key: string, model: string): LLMCl
   };
 }
 
+export function geminiClient(settings: LLMSettings, model: string): LLMClient {
+  const base = 'https://generativelanguage.googleapis.com/v1beta';
+  const call = async (req: LLMRequest) => {
+    const res = await fetch(
+      `${base}/models/${model}:generateContent?key=${encodeURIComponent(settings.geminiKey)}`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: req.system }] },
+          contents: [{ role: 'user', parts: [{ text: req.user }] }],
+          generationConfig: { maxOutputTokens: req.maxTokens ?? DEFAULT_MAX, temperature: 1 },
+        }),
+      }
+    );
+    if (!res.ok) throw new HttpError(res.status, await res.text());
+    const data = (await res.json()) as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[];
+    };
+    return (data.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? '').join('');
+  };
+  return {
+    name: `gemini:${model}`,
+    async complete(req: LLMRequest) {
+      try {
+        return await call(req);
+      } catch (e) {
+        if (e instanceof HttpError && e.status === 429) {
+          await wait(1800);
+          return call(req);
+        }
+        throw e;
+      }
+    },
+  };
+}
+
 export function mainClient(settings: LLMSettings): LLMClient | null {
   if (settings.provider === 'anthropic' && settings.anthropicKey) return claudeClient(settings, settings.anthropicModel || 'claude-sonnet-4-5');
+  if (settings.provider === 'gemini' && settings.geminiKey) return geminiClient(settings, settings.geminiModel || 'gemini-2.0-flash');
   if (settings.provider === 'openai-compat' && settings.compatBaseUrl) {
     const model = settings.compatModel || 'gpt-4o-mini';
     return compatClient(settings.compatBaseUrl, settings.compatKey || 'none', model);
@@ -108,6 +146,9 @@ export function flashClient(settings: LLMSettings): LLMClient | null {
   if (settings.provider === 'anthropic' && settings.anthropicKey) {
     const m = settings.flashModel || settings.anthropicModel || 'claude-haiku-4-5';
     return m ? claudeClient(settings, m) : null;
+  }
+  if (settings.provider === 'gemini' && settings.geminiKey) {
+    return geminiClient(settings, settings.flashModel || settings.geminiModel || 'gemini-2.0-flash-lite');
   }
   if (settings.provider === 'openai-compat' && settings.compatBaseUrl) {
     const m = settings.flashModel || settings.compatModel2 || settings.compatModel || 'gpt-4o-mini';

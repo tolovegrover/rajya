@@ -178,12 +178,14 @@ export type Screen =
   | 'codex'
   | 'ending';
 
-export type Provider = 'anthropic' | 'openai-compat' | 'offline';
+export type Provider = 'anthropic' | 'gemini' | 'openai-compat' | 'offline';
 
 export interface LLMSettings {
   provider: Provider;
   anthropicKey: string;
   anthropicModel: string;
+  geminiKey: string;
+  geminiModel: string;
   compatBaseUrl: string;
   compatKey: string;
   compatModel: string;

@@ -8,8 +8,15 @@ import { CHARACTERS } from '../data/characters';
 const COMPAT_PRESETS = [
   { label: 'opencode Zen', url: 'https://opencode.ai/zen/v1' },
   { label: 'OpenRouter', url: 'https://openrouter.ai/api/v1' },
-  { label: 'LM Studio (local)', url: 'http://localhost:1234/v1' },
+  { label: 'OpenAI', url: 'https://api.openai.com/v1' },
+  { label: 'Groq', url: 'https://api.groq.com/openai/v1' },
+  { label: 'DeepSeek', url: 'https://api.deepseek.com/v1' },
+  { label: 'Mistral', url: 'https://api.mistral.ai/v1' },
+  { label: 'Together', url: 'https://api.together.xyz/v1' },
+  { label: 'LM Studio', url: 'http://localhost:1234/v1' },
 ];
+
+const GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash-lite'];
 
 export function SettingsScreen() {
   const setScreen = useGame((g) => g.setScreen);
@@ -30,10 +37,10 @@ export function SettingsScreen() {
         <Text style={s.h}>AI SETUP</Text>
 
         <View style={s.row}>
-          {(['offline', 'anthropic', 'openai-compat'] as const).map((p) => (
+          {(['offline', 'anthropic', 'gemini', 'openai-compat'] as const).map((p) => (
             <Pressable key={p} style={[s.chip, settings.provider === p && s.chipSel]} onPress={() => setSettings({ provider: p })}>
               <Text style={[s.chipText, settings.provider === p && { color: '#0b0f1a' }]}>
-                {p === 'offline' ? 'OFFLINE' : p === 'anthropic' ? 'CLAUDE' : 'COMPATIBLE'}
+                {p === 'offline' ? 'OFFLINE' : p === 'anthropic' ? 'CLAUDE' : p === 'gemini' ? 'GEMINI' : 'COMPATIBLE'}
               </Text>
             </Pressable>
           ))}
@@ -54,6 +61,24 @@ export function SettingsScreen() {
             <TextInput value={settings.anthropicModel} onChangeText={(v) => setSettings({ anthropicModel: v })} style={input()} autoCapitalize="none" autoCorrect={false} placeholder="claude-sonnet-4-5" />
             <Text style={s.label}>FLASH MODEL (ambient ticker, optional)</Text>
             <TextInput value={settings.flashModel} onChangeText={(v) => setSettings({ flashModel: v })} style={input()} autoCapitalize="none" autoCorrect={false} placeholder="claude-haiku-4-5" />
+          </>
+        )}
+
+        {settings.provider === 'gemini' && (
+          <>
+            <Text style={s.label}>GOOGLE AI STUDIO / GEMINI API KEY (stored on this device only)</Text>
+            <TextInput value={settings.geminiKey} onChangeText={(v) => setSettings({ geminiKey: v })} secureTextEntry placeholder="AIza…" placeholderTextColor="#5f6f88" style={input()} autoCapitalize="none" autoCorrect={false} />
+            <Text style={s.label}>MAIN MODEL (beats & dilemmas)</Text>
+            <View style={s.row}>
+              {GEMINI_MODELS.map((m) => (
+                <Pressable key={m} style={[s.chip, settings.geminiModel === m && s.chipSel]} onPress={() => setSettings({ geminiModel: m })}>
+                  <Text style={[s.chipText, settings.geminiModel === m && { color: '#0b0f1a' }]}>{m.replace('gemini-', '')}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <TextInput value={settings.geminiModel} onChangeText={(v) => setSettings({ geminiModel: v })} style={input()} autoCapitalize="none" autoCorrect={false} placeholder="gemini-2.0-flash" />
+            <Text style={s.label}>FLASH MODEL (ambient ticker, optional)</Text>
+            <TextInput value={settings.flashModel} onChangeText={(v) => setSettings({ flashModel: v })} style={input()} autoCapitalize="none" autoCorrect={false} placeholder="gemini-2.0-flash-lite" />
           </>
         )}
 

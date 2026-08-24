@@ -13,7 +13,7 @@ export function TitleScreen() {
   }, [load]);
 
   const cast = ['moni', 'amir', 'devraj', 'vikram', 'moomta', 'thikait'];
-  const aiLabel = settings.provider === 'offline' ? 'AI: OFFLINE ENGINE' : settings.provider === 'anthropic' ? 'AI: CLAUDE' : 'AI: COMPATIBLE API';
+  const aiLabel = settings.provider === 'offline' ? 'AI: OFFLINE ENGINE' : settings.provider === 'anthropic' ? 'AI: CLAUDE' : settings.provider === 'gemini' ? 'AI: GEMINI' : 'AI: COMPATIBLE API';
 
   return (
     <View style={s.wrap}>

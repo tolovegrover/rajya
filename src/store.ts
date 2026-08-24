@@ -16,6 +16,8 @@ export const DEFAULT_SETTINGS: LLMSettings = {
   provider: 'offline',
   anthropicKey: '',
   anthropicModel: 'claude-sonnet-4-5',
+  geminiKey: '',
+  geminiModel: 'gemini-2.0-flash',
   compatBaseUrl: 'https://opencode.ai/zen/v1',
   compatKey: '',
   compatModel: 'claude-sonnet-4-5',

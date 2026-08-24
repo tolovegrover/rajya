@@ -20,7 +20,7 @@ export function CampaignSetup() {
   const [role, setRole] = useState<PlayerRoleId>('strategist');
   const [eta, setEta] = useState(0.5);
 
-  const aiLabel = settings.provider === 'offline' ? 'Offline engine (no key)' : settings.provider === 'anthropic' ? `Claude · ${settings.anthropicModel}` : `Compatible API · ${settings.compatModel}`;
+  const aiLabel = settings.provider === 'offline' ? 'Offline engine (no key)' : settings.provider === 'anthropic' ? `Claude · ${settings.anthropicModel}` : settings.provider === 'gemini' ? `Gemini · ${settings.geminiModel}` : `Compatible API · ${settings.compatModel}`;
 
   return (
     <View style={s.wrap}>
