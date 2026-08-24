@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, Pressable, ScrollView, StyleSheet, Switch,
+  View, Text, TextInput, Pressable, ScrollView, StyleSheet, Switch, Linking,
 } from 'react-native';
 import { useGame, useSettings, useLang } from '../store';
 import { CHARACTERS } from '../data/characters';
@@ -96,6 +96,10 @@ export function SettingsScreen() {
 
         {settings.provider === 'gemini' && (
           <>
+            <Pressable style={s.testBtn} onPress={() => Linking.openURL('https://aistudio.google.com/apikey').catch(() => undefined)}>
+              <Text style={s.testText}>{t('set.freekey')} ↗</Text>
+            </Pressable>
+            <Text style={s.note}>{t('set.freekeynote')}</Text>
             <Text style={s.label}>GOOGLE AI STUDIO / GEMINI · {t('set.apikey')}</Text>
             <TextInput value={settings.geminiKey} onChangeText={(v) => setSettings({ geminiKey: v })} secureTextEntry placeholder="AIza…" placeholderTextColor="#5f6f88" style={input()} autoCapitalize="none" autoCorrect={false} />
             <Text style={s.label}>{t('set.mainmodel')}</Text>
