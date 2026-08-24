@@ -2,7 +2,7 @@
   "expo": {
     "name": "Rajya: Rise of Kings",
     "slug": "rajya-rise-of-kings",
-    "version": "0.2",
+    "version": "0.3",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0b0f1a",
@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "com.nations.rajya",
-      "versionCode": 2,
+      "versionCode": 3,
       "usesCleartextTraffic": true,
       "softwareKeyboardLayoutMode": "pan",
       "compileSdkVersion": 35,
