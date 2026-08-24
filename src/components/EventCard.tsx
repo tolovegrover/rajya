@@ -8,6 +8,7 @@ import { useLang } from '../store';
 const SOURCE_BADGE = (b: BeatResult) => {
   if (b.source === 'llm' && !b.rescueTier) return { text: `⚡ ${t('badge.gm')}`, color: '#4d8fd1' };
   if (b.source === 'rescue') return { text: `🛟 ${t('badge.rescue', { n: b.rescueTier ?? 0 })}`, color: '#c93fd1' };
+  if (b.source === 'system') return { text: `📖 ${t('badge.phase')}`, color: '#e6b422' };
   return { text: `⚙ ${t('ai.offline')}`, color: '#7f8ea3' };
 };
 

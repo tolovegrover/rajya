@@ -7,7 +7,7 @@ import { StatsBar } from '../components/StatsBar';
 import { NewsTicker } from '../components/NewsTicker';
 import { DialogueBox } from '../components/DialogueBox';
 import { EventCard } from '../components/EventCard';
-import { ACTIONS } from '../engine/resolver';
+import { ACTIONS, phaseOf } from '../engine/resolver';
 
 export function GameScreen() {
   const {
@@ -28,7 +28,8 @@ export function GameScreen() {
 
   if (!state) return null;
   const sel = selectedRegion ? state.regions[selectedRegion] : null;
-  const actions = ACTIONS[state.role] ?? [];
+  const phase = phaseOf(state.turn);
+  const actions = (ACTIONS[state.role] ?? []).filter((a) => (a.phase ?? 0) <= phase);
 
   return (
     <View style={s.wrap}>
@@ -50,7 +51,10 @@ export function GameScreen() {
           <View style={{ flex: 1 }}>
             <Text style={s.infoName}>{sel.kingdom ? '♛ ' : ''}{t(`rg.${sel.id}`, {}, sel.name)} · {t(`city.${sel.id}`, {}, sel.city)}</Text>
             <Text style={s.infoStats}>
-              {t('game.unrest')} {Math.round(sel.unrest)} · {t('game.quota')} {Math.round(sel.reservationHeat)} · {t('game.land')} {Math.round(sel.landHeat)} · {t('game.royalist')} {Math.round(sel.royalist)}{sel.curfew ? ` · ${t('game.curfew')}` : ''}{sel.army ? ` · ${t('game.army')}` : ''}
+              {t('game.unrest')} {Math.round(sel.unrest)}
+              {phase >= 1 ? ` · ${t('game.quota')} ${Math.round(sel.reservationHeat)} · ${t('game.land')} ${Math.round(sel.landHeat)}` : ''}
+              {phase >= 2 ? ` · ${t('game.royalist')} ${Math.round(sel.royalist)}` : ''}
+              {sel.curfew ? ` · ${t('game.curfew')}` : ''}{sel.army ? ` · ${t('game.army')}` : ''}
             </Text>
           </View>
           {targetRegion === sel.id ? (

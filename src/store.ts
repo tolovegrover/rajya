@@ -6,7 +6,7 @@ import {
 import { createGame } from './engine/gameState';
 import { t, setLang } from './i18n';
 import { applyOps } from './engine/reducer';
-import { resolveAction, ACTIONS } from './engine/resolver';
+import { resolveAction, ACTIONS, phaseOf } from './engine/resolver';
 import { tick } from './engine/tick';
 import { askGameMaster, GMContext } from './llm/gameMaster';
 import { fallbackBeat } from './llm/fallback';
@@ -181,7 +181,7 @@ export const useGame = create<GameStore>((set, get) => ({
     set({
       state: st,
       screen: 'game',
-      beat: null,
+      beat: { beat: t('phase.0.text'), ticker: [], dialogue: [], ops: [], source: 'system' },
       dialogueQueue: [],
       fx: [],
       ticker: [t('store.t2'), t('store.t3')],
@@ -215,6 +215,15 @@ export const useGame = create<GameStore>((set, get) => ({
     });
     if (s2.ending) {
       set({ screen: 'ending' });
+      return;
+    }
+    const grew = phaseOf(s2.turn) > phaseOf(state.turn);
+    if (grew) {
+      const p = phaseOf(s2.turn);
+      set({
+        beat: { beat: t(`phase.${p}.text`), ticker: [], dialogue: [], ops: [], source: 'system' },
+        ticker: [t('phase.up', { name: t(`phase.${p}.name`) }), ...get().ticker].slice(0, 12),
+      });
       return;
     }
     const wantsBeat = royalOp || riotOp || next.turn % 4 === 0;

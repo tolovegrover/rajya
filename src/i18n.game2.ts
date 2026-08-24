@@ -3,6 +3,15 @@ import type { Entry } from './i18n.types';
 import { GAME3 } from './i18n.game3';
 
 const ENGINE: Record<string, Entry> = {
+  'res.post.h': { en: 'The hashtag held the top slot in {region} all night. Nothing changed; everything moved a little.', hi: '{region} में हैशटैग पूरी रात नंबर एक पर टिका रहा। बदला कुछ नहीं; हिला सब कुछ थोड़ा-थोड़ा।' },
+  'res.post.t': { en: 'ONE LINE, ALL NIGHT: {region} SCROLLS THE SAME SENTENCE', hi: 'एक लाइन, पूरी रात: {region} एक ही वाक्य पढ़ता रहा' },
+  'res.reel.h': { en: 'A marksheet, a caption, ninety seconds. By morning {city} had reposted it into an argument.', hi: 'एक मार्कशीट, एक कैप्शन, नब्बे सेकंड। सुबह तक {city} ने उसे बहस बना दिया था।' },
+  'res.reel.t': { en: 'REEL OF THE WEEK: NINETY SECONDS, ONE GRIEVANCE', hi: 'हफ़्ते की रील: नब्बे सेकंड, एक शिकायत' },
+  'res.nostalgia.h': { en: 'Sepia durbar photographs travelled {region} faster than any manifesto. Grandmothers shared them first.', hi: 'दरबार की पुरानी सेपिया तस्वीरें {region} में किसी घोषणापत्र से तेज़ चलीं। सबसे पहले दादियों ने साझा कीं।' },
+  'res.nostalgia.t': { en: '"THOSE WERE DAYS": OLD DURBAR PHOTOS TREND IN {region}', hi: '"वो भी क्या दिन थे": {region} में पुराने दरबार की तस्वीरें छाईं' },
+  'res.memepage.h': { en: 'Nobody traced the joke; everybody repeated it. The Studio picked it up by Thursday.', hi: 'मज़ाक किसने बनाया, पता नहीं चला; दोहराया सबने। गुरुवार तक स्टूडियो ने उसे उठा लिया।' },
+  'res.memepage.t': { en: 'THE JOKE NOBODY OWNS IS ON PRIME TIME', hi: 'जिस मज़ाक का कोई मालिक नहीं, वह प्राइम टाइम पर' },
+
   'res.fail.h': { en: '{action} misfired in {region}. The Studio smells blood.', hi: '{region} में {action} उलटी पड़ी। स्टूडियो को ख़ून की गंध आ गई।' },
   'res.fail.t': { en: '{action} BACKFIRES IN {region}', hi: '{region} में {action} का दाँव उलटा' },
 

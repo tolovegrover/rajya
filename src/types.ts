@@ -140,7 +140,7 @@ export interface BeatResult {
   dialogue: DialogueLine[];
   ops: WorldOp[];
   dilemma?: Dilemma;
-  source: 'llm' | 'rescue' | 'fallback';
+  source: 'llm' | 'rescue' | 'fallback' | 'system';
   rescueTier?: number;
 }
 
@@ -155,6 +155,8 @@ export interface PlayerActionDef {
   label: string;
   icon: string;
   cost: number;
+  /** Week-band this action unlocks in (see PHASE_START). Omitted = available from the start. */
+  phase?: number;
   usesInfluence?: boolean;
   desc: string;
 }

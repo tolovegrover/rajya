@@ -2,32 +2,50 @@ import { GameState, PlayerActionDef, PlayerRoleId, WorldOp, Movement } from '../
 import { clamp, noise, rand } from './util';
 import { t } from '../i18n';
 
+/**
+ * The campaign opens narrow and quiet and widens as the weeks pass: one social-media lever
+ * in phase 0, the street in 1, the machine in 2, the endgame in 3. `phase` on an action is
+ * the week-band it unlocks in; chaos (eta) ramps in over the same arc.
+ */
+export const PHASE_START = [0, 6, 18, 38];
+
+export const phaseOf = (turn: number): number =>
+  PHASE_START.reduce((acc, start, i) => (turn >= start ? i : acc), 0);
+
+/** Chaos the world actually runs on: a quarter of the setting at week 1, all of it by ~week 30. */
+export const etaFor = (s: { eta: number; turn: number }): number =>
+  clamp(s.eta * (0.25 + 0.75 * Math.min(1, s.turn / 30)), 0.03, 1);
+
 export const ACTIONS: Record<PlayerRoleId, PlayerActionDef[]> = {
   strategist: [
-    { id: 'speech', label: 'Moni Speech', icon: '🎙', cost: 5, desc: 'A mega-rally broadcast to the hot zones. Loyalty up, unrest down.' },
-    { id: 'crackdown', label: 'SIT Crackdown', icon: '🗄', cost: 0, desc: 'Amir Sahab opens the files. Crush unrest, feed separatism.' },
-    { id: 'welfare', label: 'Welfare Scheme', icon: '🎁', cost: 25, usesInfluence: true, desc: 'Cylinders for everyone. Calms the poorest regions.' },
-    { id: 'negotiate', label: 'Backchannel', icon: '🤝', cost: 8, desc: 'Tea with the agitating leader. Moods soften, heat cools.' },
-    { id: 'deploy', label: 'Deploy Army', icon: '🎖', cost: 15, desc: 'Gen. Rudra moves in. Order restored, friction with Delhi later.' },
+    { id: 'post', label: 'Trend a Hashtag', icon: '📱', cost: 2, phase: 0, desc: 'The party cell pushes one line all night. Small, cheap, everywhere.' },
+    { id: 'speech', label: 'Moni Speech', icon: '🎙', cost: 5, phase: 1, desc: 'A mega-rally broadcast to the hot zones. Loyalty up, unrest down.' },
+    { id: 'crackdown', label: 'SIT Crackdown', icon: '🗄', cost: 0, phase: 2, desc: 'Amir Sahab opens the files. Crush unrest, feed separatism.' },
+    { id: 'welfare', label: 'Welfare Scheme', icon: '🎁', cost: 25, phase: 2, usesInfluence: true, desc: 'Cylinders for everyone. Calms the poorest regions.' },
+    { id: 'negotiate', label: 'Backchannel', icon: '🤝', cost: 8, phase: 1, desc: 'Tea with the agitating leader. Moods soften, heat cools.' },
+    { id: 'deploy', label: 'Deploy Army', icon: '🎖', cost: 15, phase: 3, desc: 'Gen. Rudra moves in. Order restored, friction with Delhi later.' },
   ],
   agitator: [
-    { id: 'rally', label: 'Maharally', icon: '📣', cost: 5, desc: 'Swarna Aandolan floods a state capital. Quota heat surges.' },
-    { id: 'fast', label: 'Fast-unto-Death', icon: '⚖️', cost: 10, desc: 'Devraj refuses food on live TV. The nation holds its breath.' },
-    { id: 'blitz', label: 'Studio Blitz', icon: '📺', cost: 8, desc: 'Swammy Aarab makes merit the only story for a week.' },
-    { id: 'litigate', label: 'Fund Litigation', icon: '🏛', cost: 12, desc: 'Senior advocates attack the quota in constitutional court.' },
-    { id: 'march', label: 'March to Indraprastha', icon: '🚩', cost: 20, desc: 'The final march. Everything, on the capital.' },
+    { id: 'reel', label: 'Viral Reel', icon: '📱', cost: 2, phase: 0, desc: 'A marksheet, a caption, a hundred reposts. The heat starts here.' },
+    { id: 'rally', label: 'Maharally', icon: '📣', cost: 5, phase: 1, desc: 'Swarna Aandolan floods a state capital. Quota heat surges.' },
+    { id: 'fast', label: 'Fast-unto-Death', icon: '⚖️', cost: 10, phase: 2, desc: 'Devraj refuses food on live TV. The nation holds its breath.' },
+    { id: 'blitz', label: 'Studio Blitz', icon: '📺', cost: 8, phase: 1, desc: 'Swammy Aarab makes merit the only story for a week.' },
+    { id: 'litigate', label: 'Fund Litigation', icon: '🏛', cost: 12, phase: 2, desc: 'Senior advocates attack the quota in constitutional court.' },
+    { id: 'march', label: 'March to Indraprastha', icon: '🚩', cost: 20, phase: 3, desc: 'The final march. Everything, on the capital.' },
   ],
   royalist: [
-    { id: 'court', label: 'Court Nobles', icon: '👑', cost: 8, desc: 'Durbars in faded palaces. Royalist sentiment climbs.' },
-    { id: 'heritage', label: 'Heritage Restoration', icon: '🏯', cost: 12, desc: 'The fort is repaired; so is the myth. People start believing.' },
-    { id: 'buymla', label: 'Buy MLAs', icon: '💼', cost: 18, desc: 'Resort season. Legislators discover conscience and cash.' },
-    { id: 'rumor', label: 'Rumor Campaign', icon: '🕯', cost: 6, desc: 'Whisper networks: "the Republic is on loan". Legitimacy bleeds.' },
+    { id: 'nostalgia', label: 'Nostalgia Post', icon: '📱', cost: 2, phase: 0, desc: 'Sepia photographs of the old durbar. Grandmothers share them first.' },
+    { id: 'court', label: 'Court Nobles', icon: '👑', cost: 8, phase: 1, desc: 'Durbars in faded palaces. Royalist sentiment climbs.' },
+    { id: 'heritage', label: 'Heritage Restoration', icon: '🏯', cost: 12, phase: 1, desc: 'The fort is repaired; so is the myth. People start believing.' },
+    { id: 'buymla', label: 'Buy MLAs', icon: '💼', cost: 18, phase: 3, desc: 'Resort season. Legislators discover conscience and cash.' },
+    { id: 'rumor', label: 'Rumor Campaign', icon: '🕯', cost: 6, phase: 2, desc: 'Whisper networks: "the Republic is on loan". Legitimacy bleeds.' },
   ],
   oligarch: [
-    { id: 'fund', label: 'Fund a Faction', icon: '💰', cost: 10, desc: 'Quiet capital for the loudest street. They owe you now.' },
-    { id: 'buymedia', label: 'Buy the Narrative', icon: '📡', cost: 12, desc: 'The Studio learns who pays for the lights.' },
-    { id: 'broker', label: 'Broker Coalition', icon: '♟', cost: 15, desc: 'You assemble a government nobody voted for. Stability anyway.' },
-    { id: 'crisisbet', label: 'Crisis Bet', icon: '🎲', cost: 5, desc: 'Short the republic. If it burns, you earn.' },
+    { id: 'memepage', label: 'Fund a Meme Page', icon: '📱', cost: 3, phase: 0, desc: 'Nobody traces a joke. Everybody repeats one.' },
+    { id: 'fund', label: 'Fund a Faction', icon: '💰', cost: 10, phase: 1, desc: 'Quiet capital for the loudest street. They owe you now.' },
+    { id: 'buymedia', label: 'Buy the Narrative', icon: '📡', cost: 12, phase: 1, desc: 'The Studio learns who pays for the lights.' },
+    { id: 'broker', label: 'Broker Coalition', icon: '♟', cost: 15, phase: 2, desc: 'You assemble a government nobody voted for. Stability anyway.' },
+    { id: 'crisisbet', label: 'Crisis Bet', icon: '🎲', cost: 5, phase: 3, desc: 'Short the republic. If it burns, you earn.' },
   ],
 };
 
@@ -58,7 +76,7 @@ export function resolveAction(s: GameState, actionId: string, targetRegion: stri
   const K = (k: string, extra: Record<string, string | number> = {}) => t(`res.${k}.t`, { ...vars, ...extra });
 
   const base = 0.55 + s.influence / 250 - rg.unrest / 300;
-  const odds = clamp(Math.round((base + noise(s.eta * 0.25)) * 100), 5, 95);
+  const odds = clamp(Math.round((base + noise(etaFor(s) * 0.25)) * 100), 5, 95);
   const roll = rand() * 100;
   const ok = roll <= odds;
   const influenceDelta = ok ? (def.usesInfluence ? -4 : 2) : -6;
@@ -75,6 +93,22 @@ export function resolveAction(s: GameState, actionId: string, targetRegion: stri
 
   const mov: Movement = s.role === 'agitator' ? 'swarna' : 'mixed';
   switch (actionId) {
+    case 'post':
+      ops = [{ op: 'loyalty', region: rg.id, delta: 6 }, { op: 'unrest', region: rg.id, delta: -4 }, { op: 'factionPower', faction: 'swaraj', delta: 2 }, { op: 'headline', text: K('post') }];
+      headline = H('post');
+      break;
+    case 'reel':
+      ops = [{ op: 'reservationHeat', region: rg.id, delta: 8 }, { op: 'factionPower', faction: 'swarna', delta: 3 }, { op: 'headline', text: K('reel') }];
+      headline = H('reel');
+      break;
+    case 'nostalgia':
+      ops = [{ op: 'royalist', region: rg.id, delta: 8 }, { op: 'factionPower', faction: 'rajwada', delta: 2 }, { op: 'headline', text: K('nostalgia') }];
+      headline = H('nostalgia');
+      break;
+    case 'memepage':
+      ops = [{ op: 'factionPower', faction: 'media', delta: 4 }, { op: 'unrest', region: rg.id, delta: 3 }, { op: 'legitimacy', delta: -2 }, { op: 'headline', text: K('memepage') }];
+      headline = H('memepage');
+      break;
     case 'speech':
       ops = [...spread(-10, 'unrest'), ...spread(8, 'loyalty'), { op: 'character', id: 'moni', moodDelta: 5 }, { op: 'headline', text: K('speech') }];
       headline = H('speech');

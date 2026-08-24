@@ -3,6 +3,7 @@ import { GM_SYSTEM, worldSummary, stageBlock, narrationLanguage } from './prompt
 import { mainClient, flashClient, LLMClient, LLMRequest } from './adapters';
 import { runWithRescue } from './refusalRescue';
 import { fallbackBeat } from './fallback';
+import { etaFor } from '../engine/resolver';
 import { CHARACTERS } from '../data/characters';
 
 export interface GMContext {
@@ -118,7 +119,7 @@ export async function askGameMaster(
   const onStage = [...stage, ...customs.filter((c) => c.alive).map((c) => c.id)];
 
   const system = [
-    GM_SYSTEM(s.eta, settings.gmDirective, narrationLanguage(settings), cast.map((c) => c.id)),
+    GM_SYSTEM(etaFor(s), settings.gmDirective, narrationLanguage(settings), cast.map((c) => c.id)),
     '',
     'PERSONAS ON STAGE (write their dialogue in this voice):',
     stageBlock(settings, onStage),

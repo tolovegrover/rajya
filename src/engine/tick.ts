@@ -2,6 +2,7 @@ import { GameState, WorldOp, FactionId } from '../types';
 import { cloneState, recompute } from './gameState';
 import { clamp, rand, pick, noise, pickWeighted } from './util';
 import { ROYAL_TITLES } from '../data/india';
+import { etaFor, phaseOf } from './resolver';
 import { t } from '../i18n';
 
 export function tick(s: GameState): { state: GameState; ops: WorldOp[] } {
@@ -10,7 +11,8 @@ export function tick(s: GameState): { state: GameState; ops: WorldOp[] } {
   n.turn += 1;
   n.week = (n.week % 52) + 1;
   if (n.week === 1) n.year += 1;
-  const eta = n.eta;
+  const eta = etaFor(n);
+  const phase = phaseOf(n.turn);
 
   for (const rg of Object.values(n.regions)) {
     if (rg.kingdom) {
@@ -43,7 +45,7 @@ export function tick(s: GameState): { state: GameState; ops: WorldOp[] } {
     rg.royalist = clamp(rg.royalist + (rg.unrest > 70 ? 1.4 : rg.unrest > 50 ? -0.1 : -0.5) + rajwadaSurge + noise(eta * 0.6), 0, 100);
     rg.separatist = clamp(rg.separatist + (rg.unrest > 75 ? 0.8 : -0.2) + noise(eta * 0.5), 0, 100);
 
-    if (rg.unrest > 80 && rand() < (rg.unrest - 80) / 50 + eta * 0.1) {
+    if (phase >= 1 && rg.unrest > 80 && rand() < (rg.unrest - 80) / 50 + eta * 0.1) {
       const sev = clamp(Math.round(1 + (rg.unrest - 80) / 8), 1, 5);
       rg.unrest = clamp(rg.unrest + sev * 2, 0, 100);
       rg.curfew = true;
@@ -59,13 +61,13 @@ export function tick(s: GameState): { state: GameState; ops: WorldOp[] } {
 
     const chaosPath = rg.unrest > 75 && rg.royalist > 58 && rand() < 0.1 + eta * 0.1;
     const nostalgiaPath = rg.royalist > 78 && n.legitimacy < 55 && rand() < 0.1 + eta * 0.12;
-    if (!rg.kingdom && (chaosPath || nostalgiaPath)) {
+    if (phase >= 2 && !rg.kingdom && (chaosPath || nostalgiaPath)) {
       rg.kingdom = true;
       rg.loyalty = clamp(rg.loyalty - 25, 0, 100);
       ops.push({ op: 'restoreroyal', region: rg.id, king: t(`royal.${rg.id}`, {}, ROYAL_TITLES[rg.id]) });
     }
 
-    if (rg.separatist > 82 && rand() < 0.15) {
+    if (phase >= 1 && rg.separatist > 82 && rand() < 0.15) {
       n.legitimacy = clamp(n.legitimacy - 4, 0, 100);
       ops.push({ op: 'legitimacy', delta: -4 });
       ops.push({ op: 'headline', text: t('tick.secession', { region: rg.name }) });

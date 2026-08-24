@@ -1,7 +1,7 @@
 const { createGame } = require('./engine/gameState');
 const { applyOps } = require('./engine/reducer');
 const { tick } = require('./engine/tick');
-const { resolveAction, ACTIONS, hottestRegion } = require('./engine/resolver');
+const { resolveAction, ACTIONS, hottestRegion, phaseOf, etaFor } = require('./engine/resolver');
 const { fallbackBeat } = require('./llm/fallback');
 const { extractJson } = require('./llm/gameMaster');
 const { detectRefusal } = require('./llm/refusalRescue');
@@ -90,5 +90,31 @@ for (const dict of [UI2, UI3]) {
   }
 }
 check(`i18n: every UI string exists in all ${LANGS.length} languages (${missing.slice(0, 3).join(', ')})`, missing.length === 0);
+
+
+// --- difficulty ramp ---
+setLang('en');
+const openers = Object.entries(ACTIONS).map(([role, list]) => [role, list.filter((a) => (a.phase ?? 0) === 0)]);
+check('ramp: exactly one opening move per role', openers.every(([, list]) => list.length === 1));
+check('ramp: every opening move is cheap (<= 3)', openers.every(([, list]) => list[0].cost <= 3));
+check('ramp: every role reaches its heaviest move by the last phase', Object.values(ACTIONS).every((list) => list.some((a) => a.phase === 3)));
+check('ramp: phases widen over the campaign', phaseOf(0) === 0 && phaseOf(6) === 1 && phaseOf(18) === 2 && phaseOf(38) === 3 && phaseOf(200) === 3);
+check('ramp: chaos starts low and reaches the setting', etaFor({ eta: 0.8, turn: 0 }) < 0.25 && Math.abs(etaFor({ eta: 0.8, turn: 40 }) - 0.8) < 0.001);
+check('ramp: opening moves resolve into real ops', Object.entries(ACTIONS).every(([role, list]) => {
+  const out = resolveAction(createGame(role, 0.5), list.find((a) => (a.phase ?? 0) === 0).id, 'uttardesh');
+  return out.headline.length > 0 && out.ops.length > 0;
+}));
+let riots = 0;
+for (const eta of [0.5, 0.9]) {
+  for (let run = 0; run < 12; run++) {
+    let s = createGame('strategist', eta);
+    for (let i = 0; i < 6; i++) {
+      const { state: ticked, ops } = tick(s);
+      riots += ops.filter((o) => o.op === 'riot' || o.op === 'restoreroyal').length;
+      s = applyOps(ticked, ops).state;
+    }
+  }
+}
+check(`ramp: the first weeks stay calm (${riots} riots/thrones in 24 openings)`, riots === 0);
 
 process.exit(failures ? 1 : 0);
