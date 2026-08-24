@@ -1,3 +1,8 @@
+import groovy.json.JsonSlurper
+
+// Version lives in app.json; release.sh bumps it there and the APK follows.
+def appConfig = new JsonSlurper().parseText(rootProject.file('../app.json').text)
+
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
@@ -101,8 +106,8 @@ android {
         applicationId 'com.nations.rajya'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "0.1.0"
+        versionCode appConfig.expo.android.versionCode
+        versionName appConfig.expo.version
     }
     signingConfigs {
         debug {

@@ -17,15 +17,37 @@
       "softwareKeyboardLayoutMode": "pan",
       "compileSdkVersion": 35,
       "targetSdkVersion": 35,
-      "buildToolsVersion": "35.0.0"
+      "buildToolsVersion": "35.0.0",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#12102a"
+      }
     },
     "plugins": [
       "expo-asset",
-      "expo-font"
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./node_modules/@expo-google-fonts/cinzel/700Bold/Cinzel_700Bold.ttf",
+            "./node_modules/@expo-google-fonts/cinzel/900Black/Cinzel_900Black.ttf",
+            "./node_modules/@expo-google-fonts/cinzel-decorative/700Bold/CinzelDecorative_700Bold.ttf",
+            "./node_modules/@expo-google-fonts/cinzel-decorative/900Black/CinzelDecorative_900Black.ttf",
+            "./node_modules/@expo-google-fonts/yatra-one/400Regular/YatraOne_400Regular.ttf"
+          ]
+        }
+      ]
     ],
     "web": {
       "bundler": "metro",
-      "output": "single"
+      "output": "single",
+      "favicon": "./assets/favicon.png"
+    },
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0b0f1a"
     }
   }
 }
