@@ -73,6 +73,26 @@ you act → deterministic resolver (odds, costs, effects)
 Core loop: 1 week per 6 seconds · 28 regions · 4 player roles · 6 endings. Chaos **η**
 (0.1–0.9) decides how ideal vs. how political the republic behaves.
 
+## Inviting testers
+
+```bash
+npm run invite -- friend@example.com another@example.com
+```
+
+Adds people to the **newest** build already on Firebase App Distribution — no
+rebuild, no upload. They get an email from Firebase that walks them through
+installing Google's *App Tester* app and the APK. The script prints a direct
+release link too.
+
+Lower-friction options, in order of how little the tester has to do:
+
+| Channel | What they do | Good for |
+|---|---|---|
+| **Web** | Open [rajya-sigma.vercel.app](https://rajya-sigma.vercel.app) | Anyone, instantly, no install or account |
+| **App Distribution** | Accept the email, install App Tester | Real Android testing, crash reports, versioned builds |
+| **GitHub release** | Download the APK, allow unknown sources | Technical friends who dislike accounts |
+| **Play internal testing** | Join via an opt-in link | Up to 100 testers once the app is on Play |
+
 ## Development
 
 ```bash
