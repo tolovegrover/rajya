@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
 import { useGame, useLang } from '../store';
 import { t } from '../i18n';
 import { IndiaMap, MapLegend } from '../components/IndiaMap';
@@ -15,6 +15,8 @@ export function GameScreen() {
     runTick, doAction, dismissBeat, dismissAmbient, chooseDilemma, popDialogue, selectRegion, setTarget, setPaused, setScreen,
     rescueLog,
   } = useGame();
+  const doFreeMove = useGame((g) => g.doFreeMove);
+  const [move, setMove] = useState('');
   useLang();
 
   useEffect(() => {
@@ -81,6 +83,26 @@ export function GameScreen() {
       )}
 
       <View style={s.actions}>
+        <View style={s.moveRow}>
+          <TextInput
+            value={move}
+            onChangeText={setMove}
+            placeholder={t('move.placeholder')}
+            placeholderTextColor="#5f6f88"
+            style={s.moveInput}
+            multiline
+            editable={!thinking && !beat && !state.ending}
+            onSubmitEditing={() => { const v = move.trim(); if (v) { setMove(''); void doFreeMove(v); } }}
+          />
+          <Pressable
+            style={[s.moveBtn, (!move.trim() || state.influence < 4) && s.actionDisabled]}
+            disabled={!move.trim() || thinking || !!beat || !!state.ending || state.influence < 4}
+            onPress={() => { const v = move.trim(); setMove(''); void doFreeMove(v); }}
+          >
+            <Text style={s.moveBtnText}>{t('move.send')}</Text>
+            <Text style={s.moveCost}>◎4</Text>
+          </Pressable>
+        </View>
         <ScrollView horizontal contentContainerStyle={{ gap: 8, paddingHorizontal: 8 }} showsHorizontalScrollIndicator={false}>
           {actions.map((a) => (
             <Pressable
@@ -145,6 +167,14 @@ const s = StyleSheet.create({
     width: 92, alignItems: 'center', paddingVertical: 8, borderRadius: 10, backgroundColor: '#141b2b', borderColor: '#2a3650', borderWidth: 1, gap: 2,
   },
   actionDisabled: { opacity: 0.4 },
+  moveRow: { flexDirection: 'row', gap: 6, paddingHorizontal: 8, paddingBottom: 6, alignItems: 'flex-end' },
+  moveInput: {
+    flex: 1, color: '#eef1f8', backgroundColor: '#0d1322', borderColor: '#2a3650', borderWidth: 1,
+    borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, fontSize: 13, maxHeight: 76, minHeight: 38,
+  },
+  moveBtn: { backgroundColor: '#c23', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9, alignItems: 'center' },
+  moveBtnText: { color: '#fff', fontWeight: '900', fontSize: 11, letterSpacing: 1 },
+  moveCost: { color: '#ffd9d9', fontSize: 9, marginTop: 1 },
   actionIcon: { fontSize: 16 },
   actionLabel: { color: '#eef1f8', fontSize: 9, fontWeight: '800', textAlign: 'center' },
   actionCost: { color: '#7f8ea3', fontSize: 9 },

@@ -1,7 +1,8 @@
 const { createGame } = require('./engine/gameState');
 const { applyOps } = require('./engine/reducer');
 const { tick } = require('./engine/tick');
-const { resolveAction, ACTIONS, hottestRegion, phaseOf, etaFor } = require('./engine/resolver');
+const { resolveAction, resolveFreeMove, FREE_MOVE_COST, ACTIONS, hottestRegion, phaseOf, etaFor } = require('./engine/resolver');
+const { scoreOf } = require('./engine/score');
 const { fallbackBeat } = require('./llm/fallback');
 const { extractJson } = require('./llm/gameMaster');
 const { detectRefusal } = require('./llm/refusalRescue');
@@ -116,5 +117,23 @@ for (const eta of [0.5, 0.9]) {
   }
 }
 check(`ramp: the first weeks stay calm (${riots} riots/thrones in 24 openings)`, riots === 0);
+
+
+// --- free-text moves & score ---
+setLang('en');
+const fm = resolveFreeMove(createGame('strategist', 0.5), 'I buy the evening news and bury the story', 'uttardesh');
+check('free move: costs influence', FREE_MOVE_COST > 0 && FREE_MOVE_COST <= 10);
+check('free move: quotes the player and yields ops', fm.headline.includes('bury the story') && fm.ops.length > 0);
+check('free move: odds stay playable', fm.odds >= 5 && fm.odds <= 92);
+check('free move: empty text is refused by the store guard', resolveFreeMove(createGame('strategist', 0.5), '', 'uttardesh').ops.length > 0);
+const fresh = createGame('royalist', 0.5);
+check('score: starts low and is bounded', scoreOf(fresh) >= 0 && scoreOf(fresh) < 600);
+const won = createGame('royalist', 0.5); won.turn = 120; won.royalPopPct = 35; won.stability = 80; won.legitimacy = 80;
+check('score: rewards the role objective', scoreOf(won) > scoreOf(fresh) + 300 && scoreOf(won) <= 1000);
+for (const role of ['strategist', 'agitator', 'royalist', 'oligarch']) {
+  const s0 = createGame(role, 0.5);
+  if (!(scoreOf(s0) >= 0 && scoreOf(s0) <= 1000)) check(`score: ${role} in range`, false);
+}
+check('score: every role scores in range', true);
 
 process.exit(failures ? 1 : 0);

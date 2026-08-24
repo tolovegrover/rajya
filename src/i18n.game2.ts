@@ -3,6 +3,9 @@ import type { Entry } from './i18n.types';
 import { GAME3 } from './i18n.game3';
 
 const ENGINE: Record<string, Entry> = {
+  'move.ok': { en: 'You moved in {region}: "{said}"', hi: '{region} में आपकी चाल: "{said}"' },
+  'move.fail': { en: 'Your move in {region} did not land the way you wrote it: "{said}"', hi: '{region} में आपकी चाल वैसी नहीं चली जैसी आपने लिखी: "{said}"' },
+
   'res.post.h': { en: 'The hashtag held the top slot in {region} all night. Nothing changed; everything moved a little.', hi: '{region} में हैशटैग पूरी रात नंबर एक पर टिका रहा। बदला कुछ नहीं; हिला सब कुछ थोड़ा-थोड़ा।' },
   'res.post.t': { en: 'ONE LINE, ALL NIGHT: {region} SCROLLS THE SAME SENTENCE', hi: 'एक लाइन, पूरी रात: {region} एक ही वाक्य पढ़ता रहा' },
   'res.reel.h': { en: 'A marksheet, a caption, ninety seconds. By morning {city} had reposted it into an argument.', hi: 'एक मार्कशीट, एक कैप्शन, नब्बे सेकंड। सुबह तक {city} ने उसे बहस बना दिया था।' },

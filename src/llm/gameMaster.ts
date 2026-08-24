@@ -8,6 +8,8 @@ export interface GMContext {
   kind: 'action' | 'ambient' | 'riot' | 'royal' | 'election' | 'chaos';
   region: string;
   actionLabel?: string;
+  /** The player's own words, when they improvised instead of tapping an action. */
+  freeText?: string;
   resolverHeadline?: string;
   resolverOps: WorldOp[];
 }
@@ -129,8 +131,9 @@ export async function askGameMaster(
     settings.gmDirective ? `\nGAME MASTER DIRECTIVE FROM THE PLAYER: ${settings.gmDirective}` : '',
   ].join('\n');
 
-  const eventText =
-    ctx.kind === 'action'
+  const eventText = ctx.freeText
+    ? `PLAYER'S OWN MOVE (${s.role}) targeting ${rg.name} (${rg.id}). They typed, in their own words:\n"""${ctx.freeText.slice(0, 400)}"""\nResolver verdict: ${ctx.resolverHeadline ?? ''}\nJudge it as a game master would: honour what their role and resources plausibly allow, let overreach half-work or backfire, and never simply hand them power they have not built. Narrate the consequence, emit the ops it implies, and include a "dilemma" with 2-3 options so the move forks.`
+    : ctx.kind === 'action'
       ? `PLAYER ACTION (${s.role}): "${ctx.actionLabel}" targeting ${rg.name} (${rg.id}). Resolver verdict: ${ctx.resolverHeadline ?? ''}`
       : `EVENT KIND: ${ctx.kind} in ${rg.name} (${rg.id}).`;
 

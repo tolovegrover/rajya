@@ -6,7 +6,7 @@ import {
 import { createGame } from './engine/gameState';
 import { t, setLang } from './i18n';
 import { applyOps, opTitle } from './engine/reducer';
-import { resolveAction, ACTIONS, phaseOf } from './engine/resolver';
+import { resolveAction, resolveFreeMove, FREE_MOVE_COST, ACTIONS, phaseOf } from './engine/resolver';
 import { tick } from './engine/tick';
 import { askGameMaster, GMContext } from './llm/gameMaster';
 import { fallbackBeat } from './llm/fallback';
@@ -122,7 +122,8 @@ interface GameStore {
   newGame: (role: GameState['role'], eta: number) => void;
   runTick: () => void;
   doAction: (actionId: string) => Promise<void>;
-  requestBeat: (kind: GMContext['kind'], region: string, actionLabel?: string, resolverHeadline?: string, resolverOps?: WorldOp[]) => Promise<void>;
+  doFreeMove: (text: string) => Promise<void>;
+  requestBeat: (kind: GMContext['kind'], region: string, actionLabel?: string, resolverHeadline?: string, resolverOps?: WorldOp[], freeText?: string) => Promise<void>;
   chooseDilemma: (index: number) => void;
   pushOps: (ops: WorldOp[]) => void;
 }
@@ -288,11 +289,29 @@ export const useGame = create<GameStore>((set, get) => ({
     await get().requestBeat('action', targetRegion, label, outcome.headline, outcome.ops);
   },
 
-  async requestBeat(kind, region, actionLabel?, resolverHeadline?, resolverOps = []) {
+  async doFreeMove(text) {
+    const { state, targetRegion, pendingBeats } = get();
+    const said = text.trim();
+    if (!state || !said || state.ending || get().thinking || get().beat || pendingBeats.length > 0) return;
+    if (state.influence < FREE_MOVE_COST) return;
+    const outcome = resolveFreeMove(state, said, targetRegion);
+    let s = { ...state, influence: Math.max(0, state.influence - FREE_MOVE_COST) };
+    const applied = applyOps(s, outcome.ops);
+    s = applied.state;
+    set({
+      state: s,
+      thinking: true,
+      fx: [...get().fx, ...fxFromOps(applied.applied, s.turn)].slice(-24),
+      ticker: [outcome.headline.toUpperCase().slice(0, 90), ...get().ticker].slice(0, 12),
+    });
+    await get().requestBeat('action', targetRegion, said.slice(0, 80), outcome.headline, outcome.ops, said);
+  },
+
+  async requestBeat(kind, region, actionLabel?, resolverHeadline?, resolverOps = [], freeText?) {
     const { state } = get();
     if (!state) return;
     const settings = useSettings.getState().settings;
-    const ctx: GMContext = { kind, region, actionLabel, resolverHeadline, resolverOps };
+    const ctx: GMContext = { kind, region, actionLabel, freeText, resolverHeadline, resolverOps };
     const finish = (result: BeatResult, gmOps: WorldOp[]) => {
       const s = get().state;
       if (!s) return;

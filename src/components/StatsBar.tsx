@@ -5,6 +5,7 @@ import { GameState } from '../types';
 import { PLAYER_ROLES } from '../data/factions';
 import { t } from '../i18n';
 import { phaseOf } from '../engine/resolver';
+import { scoreOf } from '../engine/score';
 import { useLang } from '../store';
 import { F, GOLD } from '../theme';
 
@@ -25,6 +26,7 @@ export function StatsBar({ state }: { state: GameState }) {
       {phase >= 1 && cell(t('stat.legitimacy'), `${Math.round(state.legitimacy)}`, state.legitimacy > 50 ? '#5aa2e8' : '#e8875a')}
       {phase >= 1 && cell(t('stat.stability'), `${Math.round(state.stability)}`, state.stability > 50 ? '#5aa2e8' : '#e8875a')}
       {cell(t('stat.influence'), `${Math.round(state.influence)}`, '#d78ae8')}
+      {phase >= 1 && cell(t('stat.score'), `${scoreOf(state)}`, GOLD)}
       {phase >= 2 && cell('η', state.eta.toFixed(2), '#9aa4b8')}
       <View style={styles.role}>
         <Text style={styles.roleText} numberOfLines={2}>{t(`role.${state.role}.name`, {}, role?.name ?? '')}</Text>

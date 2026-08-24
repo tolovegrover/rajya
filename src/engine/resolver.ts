@@ -49,6 +49,25 @@ export const ACTIONS: Record<PlayerRoleId, PlayerActionDef[]> = {
   ],
 };
 
+/** Cost and odds for a move the player wrote themselves. Consequences come from the GM. */
+export const FREE_MOVE_COST = 4;
+
+export function resolveFreeMove(s: GameState, text: string, targetRegion: string): { ok: boolean; odds: number; headline: string; ops: WorldOp[] } {
+  const rg = s.regions[targetRegion] ?? s.regions['uttardesh'];
+  const said = text.trim().slice(0, 200);
+  const base = 0.5 + s.influence / 260 - rg.unrest / 320;
+  const odds = clamp(Math.round((base + noise(etaFor(s) * 0.25)) * 100), 5, 92);
+  const ok = rand() * 100 <= odds;
+  return {
+    ok,
+    odds,
+    headline: t(ok ? 'move.ok' : 'move.fail', { region: rg.name, said }),
+    ops: ok
+      ? [{ op: 'unrest', region: rg.id, delta: -2 }, { op: 'loyalty', region: rg.id, delta: 2 }]
+      : [{ op: 'unrest', region: rg.id, delta: 4 }],
+  };
+}
+
 export function hottestRegion(s: GameState): string {
   let best = '';
   let score = -1;

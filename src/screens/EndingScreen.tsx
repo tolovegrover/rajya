@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useGame, useLang } from '../store';
 import { t } from '../i18n';
+import { scoreOf } from '../engine/score';
 import { PLAYER_ROLES } from '../data/factions';
 
 export function EndingScreen() {
@@ -18,6 +19,7 @@ export function EndingScreen() {
       <Text style={s.title}>{state.ending.title}</Text>
       <Text style={s.text}>{state.ending.text}</Text>
       <View style={s.statsCard}>
+        <Text style={s.stat}>{t('stat.score')}: {scoreOf(state)} / 1000</Text>
         <Text style={s.stat}>{t('endscr.weeks')}: {state.turn}</Text>
         <Text style={s.stat}>{t('stat.legitimacy')}: {Math.round(state.legitimacy)} · {t('stat.stability')}: {Math.round(state.stability)}</Text>
         <Text style={s.stat}>{t('endscr.royalpop')}: {state.royalPopPct}%</Text>
