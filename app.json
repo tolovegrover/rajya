@@ -20,7 +20,8 @@
       "buildToolsVersion": "35.0.0"
     },
     "plugins": [
-      "expo-asset"
+      "expo-asset",
+      "expo-font"
     ],
     "web": {
       "bundler": "metro",

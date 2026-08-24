@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useGame, useSettings, useLang } from '../store';
 import { t } from '../i18n';
 import { PLAYER_ROLES } from '../data/factions';
 import { PlayerRoleId } from '../types';
+import { FancyButton, GoldHeader } from '../components/FancyButton';
+import { F, GOLD, ORANGE } from '../theme';
 
 const ETA_PRESETS = [0.1, 0.3, 0.5, 0.7, 0.9];
 
@@ -13,7 +16,6 @@ const etaLabel = (e: number) =>
 export function CampaignSetup() {
   const { newGame, setScreen } = useGame();
   const settings = useSettings((s) => s.settings);
-  const setSettings = useSettings((s) => s.setSettings);
   useLang();
   const [role, setRole] = useState<PlayerRoleId>('strategist');
   const [eta, setEta] = useState(0.5);
@@ -23,26 +25,39 @@ export function CampaignSetup() {
   return (
     <View style={s.wrap}>
       <ScrollView contentContainerStyle={{ padding: 18, gap: 14, paddingBottom: 40 }}>
-        <Text style={s.h}>{t('setup.h')}</Text>
+        <GoldHeader text={t('setup.h')} size={26} style={{ textAlign: 'center', marginTop: 22 }} />
 
         <Text style={s.label}>{t('setup.step1')}</Text>
         {PLAYER_ROLES.map((r) => (
-          <Pressable key={r.id} style={[s.roleCard, role === r.id && s.roleSel]} onPress={() => setRole(r.id)}>
-            <Text style={s.roleName}>{t(`role.${r.id}.name`, {}, r.name)}</Text>
-            <Text style={s.roleTag}>{t(`role.${r.id}.tag`, {}, r.tagline)}</Text>
-            <Text style={s.roleWin}>{t('setup.win')} · {t(`role.${r.id}.win`, {}, r.winText)}</Text>
+          <Pressable key={r.id} onPress={() => setRole(r.id)}>
+            <LinearGradient
+              colors={role === r.id ? (['#3a2c05', '#241c07'] as const) : (['#131a2a', '#0e1420'] as const)}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[s.roleCard, role === r.id && s.roleSel]}
+            >
+              <Text style={[s.roleName, { textShadowColor: 'rgba(0,0,0,0.7)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 3 }]}>
+                {role === r.id ? '👑 ' : ''}{t(`role.${r.id}.name`, {}, r.name)}
+              </Text>
+              <Text style={s.roleTag}>{t(`role.${r.id}.tag`, {}, r.tagline)}</Text>
+              <Text style={s.roleWin}>🏆 {t('setup.win')} · {t(`role.${r.id}.win`, {}, r.winText)}</Text>
+            </LinearGradient>
           </Pressable>
         ))}
 
         <Text style={s.label}>{t('setup.step2')}</Text>
         <View style={s.etaRow}>
           {ETA_PRESETS.map((v) => (
-            <Pressable key={v} style={[s.etaChip, Math.abs(eta - v) < 0.01 && s.etaSel]} onPress={() => setEta(v)}>
+            <Pressable
+              key={v}
+              style={[s.etaChip, Math.abs(eta - v) < 0.01 && s.etaSel]}
+              onPress={() => setEta(v)}
+            >
               <Text style={[s.etaText, Math.abs(eta - v) < 0.01 && { color: '#0b0f1a' }]}>{v}</Text>
             </Pressable>
           ))}
         </View>
-        <Text style={s.etaDesc}>η = {eta.toFixed(2)} — {etaLabel(eta)}</Text>
+        <Text style={[s.etaDesc, { fontFamily: F.title, fontSize: 13 }]}>η {eta.toFixed(2)} — {etaLabel(eta)}</Text>
 
         <Text style={s.label}>{t('setup.step3')}</Text>
         <View style={s.aiCard}>
@@ -52,9 +67,7 @@ export function CampaignSetup() {
           </Pressable>
         </View>
 
-        <Pressable style={s.start} onPress={() => newGame(role, eta)}>
-          <Text style={s.startText}>{t('setup.start')} ▸</Text>
-        </Pressable>
+        <FancyButton label={`${t('setup.start')}  ▸`} onPress={() => newGame(role, eta)} />
         <Pressable style={s.back} onPress={() => setScreen('title')}>
           <Text style={s.backText}>◂ {t('common.back')}</Text>
         </Pressable>
@@ -65,24 +78,21 @@ export function CampaignSetup() {
 
 const s = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: '#0b0f1a' },
-  h: { color: '#e6b422', fontSize: 22, fontWeight: '900', letterSpacing: 2, textAlign: 'center', marginTop: 24 },
-  label: { color: '#5f6f88', fontSize: 10, fontWeight: '900', letterSpacing: 2, marginTop: 6 },
-  roleCard: { backgroundColor: '#101625', borderColor: '#26324a', borderWidth: 1, borderRadius: 12, padding: 12, gap: 3 },
-  roleSel: { borderColor: '#e6b422', borderWidth: 2 },
-  roleName: { color: '#eef1f8', fontSize: 15, fontWeight: '900' },
-  roleTag: { color: '#aeb9cf', fontSize: 11, lineHeight: 16 },
-  roleWin: { color: '#4d8fd1', fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
+  label: { color: ORANGE, fontSize: 11, fontWeight: '900', letterSpacing: 3, marginTop: 6, fontFamily: F.title },
+  roleCard: { borderColor: '#26324a', borderWidth: 1, borderRadius: 14, padding: 14, gap: 4 },
+  roleSel: { borderColor: GOLD, borderWidth: 2, elevation: 8, shadowColor: GOLD, shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 0 } },
+  roleName: { color: '#f4efe6', fontSize: 19, fontWeight: '900', fontFamily: F.titleBlack, letterSpacing: 1 },
+  roleTag: { color: '#aeb9cf', fontSize: 12, lineHeight: 17 },
+  roleWin: { color: '#5aa2e8', fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
   etaRow: { flexDirection: 'row', gap: 6 },
-  etaChip: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 8, backgroundColor: '#101625', borderColor: '#26324a', borderWidth: 1 },
-  etaSel: { backgroundColor: '#e6b422' },
-  etaText: { color: '#aeb9cf', fontWeight: '900' },
-  etaDesc: { color: '#7f8ea3', fontSize: 11, fontStyle: 'italic' },
-  aiCard: { backgroundColor: '#101625', borderColor: '#26324a', borderWidth: 1, borderRadius: 12, padding: 12, gap: 8, alignItems: 'center' },
-  aiText: { color: '#eef1f8', fontSize: 12, fontWeight: '700' },
-  aiBtn: { borderColor: '#3a4a6b', borderWidth: 1, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8 },
-  aiBtnText: { color: '#aeb9cf', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
-  start: { backgroundColor: '#c23', paddingVertical: 15, borderRadius: 10, alignItems: 'center', marginTop: 10 },
-  startText: { color: '#fff', fontWeight: '900', letterSpacing: 2 },
+  etaChip: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 10, backgroundColor: '#101625', borderColor: '#26324a', borderWidth: 1 },
+  etaSel: { backgroundColor: GOLD, borderColor: GOLD, elevation: 5 },
+  etaText: { color: '#aeb9cf', fontWeight: '900', fontFamily: F.titleBlack, fontSize: 16 },
+  etaDesc: { color: '#8d9ab5', fontStyle: 'italic' },
+  aiCard: { backgroundColor: '#101625', borderColor: '#26324a', borderWidth: 1, borderRadius: 14, padding: 14, gap: 10, alignItems: 'center' },
+  aiText: { color: '#eef1f8', fontSize: 13, fontWeight: '800', fontFamily: F.title },
+  aiBtn: { borderColor: '#3a4a6b', borderWidth: 1, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 10 },
+  aiBtnText: { color: '#aeb9cf', fontSize: 11, fontWeight: '800', letterSpacing: 1 },
   back: { alignItems: 'center', padding: 8 },
-  backText: { color: '#5f6f88', fontSize: 11 },
+  backText: { color: '#5f6f88', fontSize: 12 },
 });

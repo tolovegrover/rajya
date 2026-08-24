@@ -1,17 +1,18 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  GameState, LLMSettings, Screen, BeatResult, MapFx, RescueLogEntry, DialogueLine, WorldOp, Character,
+  GameState, LLMSettings, Screen, BeatResult, MapFx, RescueLogEntry, DialogueLine, WorldOp, Character, GameEvent,
 } from './types';
 import { createGame } from './engine/gameState';
 import { t, setLang } from './i18n';
-import { applyOps } from './engine/reducer';
+import { applyOps, opTitle } from './engine/reducer';
 import { resolveAction, ACTIONS, phaseOf } from './engine/resolver';
 import { tick } from './engine/tick';
 import { askGameMaster, GMContext } from './llm/gameMaster';
 import { fallbackBeat } from './llm/fallback';
 
 const SETTINGS_KEY = 'rajya_settings_v1';
+const LAST_CHRONICLE_KEY = 'rajya_last_chronicle_v1';
 
 export const DEFAULT_SETTINGS: LLMSettings = {
   lang: 'hi',
@@ -99,7 +100,10 @@ interface GameStore {
   state: GameState | null;
   screen: Screen;
   beat: BeatResult | null;
+  pendingBeats: BeatResult[];
   dialogueQueue: DialogueLine[];
+  lastAmbient: { headline: string; at: number } | null;
+  lastChronicle: GameEvent[] | null;
   fx: MapFx[];
   ticker: string[];
   thinking: boolean;
@@ -113,6 +117,7 @@ interface GameStore {
   selectRegion: (r: string | null) => void;
   setPaused: (p: boolean) => void;
   dismissBeat: () => void;
+  dismissAmbient: () => void;
   popDialogue: () => void;
   newGame: (role: GameState['role'], eta: number) => void;
   runTick: () => void;
@@ -153,7 +158,10 @@ export const useGame = create<GameStore>((set, get) => ({
   state: null,
   screen: 'title',
   beat: null,
+  pendingBeats: [],
   dialogueQueue: [],
+  lastAmbient: null,
+  lastChronicle: null,
   fx: [],
   ticker: [t('store.t1')],
   thinking: false,
@@ -178,7 +186,11 @@ export const useGame = create<GameStore>((set, get) => ({
     set({ paused: p });
   },
   dismissBeat() {
-    set({ beat: null });
+    const next = get().pendingBeats[0];
+    set({ beat: next ?? null, pendingBeats: get().pendingBeats.slice(1) });
+  },
+  dismissAmbient() {
+    set({ lastAmbient: null });
   },
   popDialogue() {
     set({ dialogueQueue: get().dialogueQueue.slice(1) });
@@ -190,7 +202,9 @@ export const useGame = create<GameStore>((set, get) => ({
       state: st,
       screen: 'game',
       beat: { beat: t('phase.0.text'), ticker: [], dialogue: [], ops: [], source: 'system' },
+      pendingBeats: [],
       dialogueQueue: [],
+      lastAmbient: null,
       fx: [],
       ticker: [t('store.t2'), t('store.t3')],
       rescueLog: [],
@@ -207,8 +221,8 @@ export const useGame = create<GameStore>((set, get) => ({
   },
 
   runTick() {
-    const { state, paused, thinking, beat } = get();
-    if (!state || state.ending || paused || thinking || beat) return;
+    const { state, paused, thinking, beat, pendingBeats } = get();
+    if (!state || state.ending || paused || thinking || beat || pendingBeats.length > 0) return;
     const { state: next, ops } = tick(state);
     const applied = applyOps(next, ops);
     let s2 = applied.state;
@@ -216,20 +230,32 @@ export const useGame = create<GameStore>((set, get) => ({
     const riotOp = ops.find((o) => o.op === 'riot');
     const royalOp = ops.find((o) => o.op === 'restoreroyal');
     const headlines = ops.filter((o) => o.op === 'headline').map((o) => (o as { text: string }).text);
+    const weekEntry: GameEvent = { turn: s2.turn, week: s2.week, kind: 'week', headline: t('chron.week', { w: s2.week, y: s2.year }), beat: '' };
+    s2 = { ...s2, eventLog: [...s2.eventLog, weekEntry, ...headlines.map((h) => ({ turn: s2.turn, week: s2.week, kind: 'headline' as const, headline: h, beat: '' }))].slice(-800) };
     set({
       state: s2,
       fx: [...get().fx, ...newFx].slice(-24),
       ticker: [...headlines.reverse(), ...get().ticker].slice(0, 12),
     });
     if (s2.ending) {
-      set({ screen: 'ending' });
+      const endEntry: GameEvent = { turn: s2.turn, week: s2.week, kind: 'ending', headline: s2.ending.title, beat: s2.ending.text };
+      s2 = { ...s2, eventLog: [...s2.eventLog, endEntry] };
+      set({ state: s2 });
+      void AsyncStorage.setItem(LAST_CHRONICLE_KEY, JSON.stringify(s2.eventLog.slice(-600))).catch(() => undefined);
+      set({ screen: 'ending', lastChronicle: s2.eventLog });
       return;
     }
     const grew = phaseOf(s2.turn) > phaseOf(state.turn);
     if (grew) {
       const p = phaseOf(s2.turn);
+      const phaseEntry: GameEvent = {
+        turn: s2.turn, week: s2.week, kind: 'headline',
+        headline: t('phase.up', { name: t(`phase.${p}.name`) }), beat: t(`phase.${p}.text`),
+      };
+      s2 = { ...s2, eventLog: [...s2.eventLog, phaseEntry].slice(-800) };
       set({
-        beat: { beat: t(`phase.${p}.text`), ticker: [], dialogue: [], ops: [], source: 'system' },
+        state: s2,
+        lastAmbient: { headline: t('phase.up', { name: t(`phase.${p}.name`) }), at: Date.now() },
         ticker: [t('phase.up', { name: t(`phase.${p}.name`) }), ...get().ticker].slice(0, 12),
       });
       return;
@@ -243,8 +269,8 @@ export const useGame = create<GameStore>((set, get) => ({
   },
 
   async doAction(actionId) {
-    const { state, targetRegion } = get();
-    if (!state || state.ending || get().thinking || get().beat) return;
+    const { state, targetRegion, pendingBeats } = get();
+    if (!state || state.ending || get().thinking || get().beat || pendingBeats.length > 0) return;
     const outcome = resolveAction(state, actionId, targetRegion);
     let s = { ...state };
     s.influence = Math.max(0, Math.min(100, s.influence + outcome.influenceDelta));
@@ -267,11 +293,7 @@ export const useGame = create<GameStore>((set, get) => ({
     if (!state) return;
     const settings = useSettings.getState().settings;
     const ctx: GMContext = { kind, region, actionLabel, resolverHeadline, resolverOps };
-    try {
-      const result = await askGameMaster(state, settings, ctx, (entry) =>
-        get().log({ turn: state.turn, tier: entry.tier, note: entry.note, originalRequest: entry.originalRequest.slice(0, 400) })
-      );
-      const gmOps = result.ops.filter((o) => !resolverOps.includes(o));
+    const finish = (result: BeatResult, gmOps: WorldOp[]) => {
       const s = get().state;
       if (!s) return;
       let s2 = s;
@@ -284,21 +306,49 @@ export const useGame = create<GameStore>((set, get) => ({
         s2 = { ...s2, pendingDilemma: result.dilemma };
         set({ state: s2 });
       }
-      set({
-        beat: { ...result, ops: gmOps },
-        thinking: false,
-        dialogueQueue: result.dialogue.length ? result.dialogue : get().dialogueQueue,
-        ticker: [...result.ticker, ...get().ticker].slice(0, 12),
-      });
-      if (s2 && s2.ending) set({ screen: 'ending' });
+      const chronicle: GameEvent = {
+        turn: s2.turn, week: s2.week, kind: 'beat',
+        headline: result.ticker[0] ?? (actionLabel ?? kind),
+        beat: result.beat,
+        dialogue: result.dialogue,
+        ops: gmOps.map((o) => opTitle(o, s2)),
+      };
+      s2 = { ...s2, eventLog: [...s2.eventLog, chronicle].slice(-800) };
+      set({ state: s2 });
+      if (s2.ending) {
+        void AsyncStorage.setItem(LAST_CHRONICLE_KEY, JSON.stringify(s2.eventLog.slice(-600))).catch(() => undefined);
+        set({ screen: 'ending', lastChronicle: s2.eventLog, thinking: false });
+        return;
+      }
+      const isAmbient = kind === 'ambient' && !result.dilemma;
+      if (isAmbient) {
+        set({
+          thinking: false,
+          lastAmbient: { headline: result.ticker[0] ?? result.beat.slice(0, 80), at: Date.now() },
+          dialogueQueue: [...get().dialogueQueue, ...result.dialogue].slice(-8),
+          ticker: [...result.ticker, ...get().ticker].slice(0, 12),
+        });
+      } else {
+        const card: BeatResult = { ...result, ops: gmOps };
+        const q = get().beat ? [...get().pendingBeats, card] : get().pendingBeats;
+        set({
+          beat: get().beat ?? card,
+          pendingBeats: q,
+          thinking: false,
+          dialogueQueue: [...get().dialogueQueue, ...result.dialogue].slice(-8),
+          ticker: [...result.ticker, ...get().ticker].slice(0, 12),
+        });
+      }
+    };
+    try {
+      const result = await askGameMaster(state, settings, ctx, (entry) =>
+        get().log({ turn: state.turn, tier: entry.tier, note: entry.note, originalRequest: entry.originalRequest.slice(0, 400) })
+      );
+      const gmOps = result.ops.filter((o) => !resolverOps.includes(o));
+      finish(result, gmOps);
     } catch {
       const fb = fallbackBeat(state, { kind, region, actionLabel, resolverHeadline, resolverOps });
-      set({
-        beat: fb,
-        thinking: false,
-        dialogueQueue: fb.dialogue.length ? fb.dialogue : get().dialogueQueue,
-        ticker: [...fb.ticker, ...get().ticker].slice(0, 12),
-      });
+      finish(fb, []);
     }
   },
 
@@ -308,9 +358,14 @@ export const useGame = create<GameStore>((set, get) => ({
     const option = state.pendingDilemma.options[index];
     if (!option) return;
     const applied = applyOps(state, option.ops);
+    const decision: GameEvent = {
+      turn: applied.state.turn, week: applied.state.week, kind: 'decision',
+      headline: t('chron.decision', { label: option.label }), beat: '',
+    };
+    const s2 = { ...applied.state, pendingDilemma: null, eventLog: [...applied.state.eventLog, decision].slice(-800) };
     set({
-      state: { ...applied.state, pendingDilemma: null },
-      fx: [...get().fx, ...fxFromOps(applied.applied, applied.state.turn)].slice(-24),
+      state: s2,
+      fx: [...get().fx, ...fxFromOps(applied.applied, s2.turn)].slice(-24),
       ticker: [t('store.decision', { label: option.label }), ...get().ticker].slice(0, 12),
     });
   },

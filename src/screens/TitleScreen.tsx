@@ -1,10 +1,13 @@
 import React, { useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useGame, useSettings } from '../store';
 import { CharacterPortrait } from '../components/CharacterPortrait';
+import { FancyButton } from '../components/FancyButton';
 import { CHARACTERS } from '../data/characters';
 import { LanguageBar } from '../components/LanguageBar';
 import { t } from '../i18n';
+import { F, GOLD, ORANGE } from '../theme';
 
 export function TitleScreen() {
   const { setScreen } = useGame();
@@ -19,42 +22,74 @@ export function TitleScreen() {
   const aiLabel = settings.provider === 'offline' ? t('ai.offline') : settings.provider === 'anthropic' ? 'CLAUDE' : settings.provider === 'gemini' ? 'GEMINI' : t('ai.compat');
 
   return (
-    <View style={s.wrap}>
-      <Text style={s.kicker}>{t('title.kicker')}</Text>
-      <Text style={s.title}>RAJYA</Text>
-      <Text style={s.subtitle}>{t('title.sub')}</Text>
-      <View style={s.cast}>
-        {cast.map((id) => {
-          const c = CHARACTERS.find((x) => x.id === id);
-          return c ? <CharacterPortrait key={id} spec={c.avatar} size={52} /> : null;
-        })}
-      </View>
-      <Text style={s.blurb}>{t('title.blurb')}</Text>
-      <LanguageBar />
-      <Pressable style={s.btn} onPress={() => setScreen('disclaimer')}>
-        <Text style={s.btnText}>{t('title.new')} ▸</Text>
-      </Pressable>
-      <Pressable style={s.btn2} onPress={() => setScreen('settings')}>
-        <Text style={s.btn2Text}>{t('title.ai')} · {aiLabel}</Text>
-      </Pressable>
-      <Pressable style={s.btn2} onPress={() => setScreen('codex')}>
-        <Text style={s.btn2Text}>{t('title.codex')}</Text>
-      </Pressable>
-      <Text style={s.foot}>{t('title.foot')}</Text>
-    </View>
+    <LinearGradient colors={['#141021', '#0b0f1a', '#1a0e08']} locations={[0, 0.55, 1]} style={s.wrap}>
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+        <Text style={s.kicker}>{t('title.kicker')}</Text>
+
+        <View style={s.titleRow}>
+          <Text style={[s.titleBig, { color: '#3a2c05', position: 'absolute', transform: [{ translateY: 4 }, { translateX: 3 }] }]}>RAJYA</Text>
+          <Text style={[s.titleBig, { color: GOLD, textShadowColor: 'rgba(230,180,34,0.9)', textShadowRadius: 22 }]}>RAJYA</Text>
+        </View>
+
+        <LinearGradient
+          colors={['rgba(230,180,34,0.9)', 'rgba(255,255,255,0.95)', 'rgba(230,180,34,0.9)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={s.rule}
+        />
+        <Text style={[s.subtitle, { fontFamily: F.deco, textShadowColor: 'rgba(255,255,255,0.4)', textShadowRadius: 10 }]}>{t('title.sub')}</Text>
+
+        <View style={s.cast}>
+          {cast.map((id) => {
+            const c = CHARACTERS.find((x) => x.id === id);
+            return c ? <CharacterPortrait key={id} spec={c.avatar} size={58} /> : null;
+          })}
+        </View>
+
+        <Text style={s.blurb}>{t('title.blurb')}</Text>
+
+        <View style={{ alignSelf: 'stretch', gap: 12 }}>
+          <FancyButton label={`${t('title.new')}  ▸`} onPress={() => setScreen('disclaimer')} />
+          <FancyButton label={`${t('title.ai')} · ${aiLabel}`} variant="gold" small onPress={() => setScreen('settings')} />
+          <FancyButton label={t('title.codex')} variant="ghost" small onPress={() => setScreen('codex')} />
+          <FancyButton label={`📜 ${t('title.chronicle')}`} variant="ghost" small onPress={() => setScreen('chronicle')} />
+        </View>
+
+        <LanguageBar />
+
+        <Text style={s.foot}>{t('title.foot')}</Text>
+      </ScrollView>
+    </LinearGradient>
   );
 }
 
 const s = StyleSheet.create({
-  wrap: { flex: 1, backgroundColor: '#0b0f1a', alignItems: 'center', justifyContent: 'center', padding: 20, gap: 9 },
-  kicker: { color: '#c96a3f', fontSize: 10, letterSpacing: 3, fontWeight: '800' },
-  title: { color: '#e6b422', fontSize: 64, fontWeight: '900', letterSpacing: 6 },
-  subtitle: { color: '#eef1f8', fontSize: 18, fontWeight: '300', letterSpacing: 8, marginBottom: 6 },
-  cast: { flexDirection: 'row', gap: 6, marginVertical: 8 },
-  blurb: { color: '#aeb9cf', fontSize: 12, lineHeight: 18, textAlign: 'center', maxWidth: 340, marginBottom: 10 },
-  btn: { backgroundColor: '#c23', paddingHorizontal: 40, paddingVertical: 14, borderRadius: 10 },
-  btnText: { color: '#fff', fontWeight: '900', letterSpacing: 2, fontSize: 14 },
-  btn2: { borderColor: '#3a4a6b', borderWidth: 1, paddingHorizontal: 24, paddingVertical: 8, borderRadius: 8 },
-  btn2Text: { color: '#aeb9cf', fontWeight: '700', fontSize: 11, letterSpacing: 1 },
-  foot: { color: '#5f6f88', fontSize: 9, marginTop: 10 },
+  wrap: { flex: 1 },
+  scroll: { alignItems: 'center', justifyContent: 'center', padding: 20, gap: 12, flexGrow: 1 },
+  kicker: {
+    color: ORANGE,
+    fontSize: 12,
+    letterSpacing: 5,
+    fontWeight: '900',
+    fontFamily: F.titleBlack,
+    textShadowColor: 'rgba(242,106,27,0.6)',
+    textShadowRadius: 8,
+  },
+  titleRow: { height: 96, justifyContent: 'center' },
+  titleBig: {
+    fontFamily: F.decoBlack,
+    fontSize: 76,
+    letterSpacing: 8,
+    textAlign: 'center',
+  },
+  rule: { height: 3, width: '86%', borderRadius: 2, marginTop: -4 },
+  subtitle: {
+    color: '#f4efe6',
+    fontSize: 20,
+    letterSpacing: 9,
+    marginTop: 2,
+  },
+  cast: { flexDirection: 'row', gap: 8, marginVertical: 6 },
+  blurb: { color: '#b7c3da', fontSize: 13, lineHeight: 20, textAlign: 'center', maxWidth: 360 },
+  foot: { color: '#5f6f88', fontSize: 10, marginTop: 4 },
 });

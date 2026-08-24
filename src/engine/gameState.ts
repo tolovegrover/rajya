@@ -36,6 +36,8 @@ export function createGame(role: PlayerRoleId, eta: number, customCharacters: Ch
     eventLog: [
       {
         turn: 0,
+        week: 1,
+        kind: 'beat' as const,
         headline: t('gs.headline'),
         beat: t('gs.beat'),
       },

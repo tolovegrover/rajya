@@ -11,8 +11,8 @@ import { ACTIONS, phaseOf } from '../engine/resolver';
 
 export function GameScreen() {
   const {
-    state, fx, ticker, thinking, beat, dialogueQueue, selectedRegion, targetRegion,
-    runTick, doAction, dismissBeat, chooseDilemma, popDialogue, selectRegion, setTarget, setPaused, setScreen,
+    state, fx, ticker, thinking, beat, pendingBeats, dialogueQueue, lastAmbient, selectedRegion, targetRegion,
+    runTick, doAction, dismissBeat, dismissAmbient, chooseDilemma, popDialogue, selectRegion, setTarget, setPaused, setScreen,
     rescueLog,
   } = useGame();
   useLang();
@@ -23,8 +23,14 @@ export function GameScreen() {
   }, [runTick]);
 
   useEffect(() => {
-    setPaused(!!beat || thinking);
-  }, [beat, thinking, setPaused]);
+    setPaused(!!beat || thinking || pendingBeats.length > 0);
+  }, [beat, thinking, pendingBeats.length, setPaused]);
+
+  useEffect(() => {
+    if (!lastAmbient) return;
+    const t = setTimeout(() => dismissAmbient(), 8000);
+    return () => clearTimeout(t);
+  }, [lastAmbient, dismissAmbient]);
 
   if (!state) return null;
   const sel = selectedRegion ? state.regions[selectedRegion] : null;
@@ -44,6 +50,12 @@ export function GameScreen() {
           </View>
         )}
         <DialogueBox lines={dialogueQueue} state={state} onDismiss={popDialogue} />
+        {lastAmbient && !beat && (
+          <Pressable style={s.ambient} onPress={dismissAmbient}>
+            <Text style={s.ambientIcon}>📌</Text>
+            <Text style={s.ambientText} numberOfLines={2}>{lastAmbient.headline}</Text>
+          </Pressable>
+        )}
       </View>
 
       {sel && (
@@ -69,7 +81,7 @@ export function GameScreen() {
       )}
 
       <View style={s.actions}>
-        <ScrollView horizontal contentContainerStyle={{ gap: 6, paddingHorizontal: 8 }} showsHorizontalScrollIndicator={false}>
+        <ScrollView horizontal contentContainerStyle={{ gap: 8, paddingHorizontal: 8 }} showsHorizontalScrollIndicator={false}>
           {actions.map((a) => (
             <Pressable
               key={a.id}
@@ -85,7 +97,9 @@ export function GameScreen() {
         </ScrollView>
         <View style={s.footRow}>
           <Pressable onPress={() => setScreen('codex')}><Text style={s.footBtn}>{t('game.codex')}</Text></Pressable>
+          <Pressable onPress={() => setScreen('chronicle')}><Text style={s.footBtn}>📜 {t('game.chronicle')}</Text></Pressable>
           <Pressable onPress={() => setScreen('settings')}><Text style={s.footBtn}>{t('title.ai')}</Text></Pressable>
+          {pendingBeats.length > 0 && <Text style={s.pending}>📜 +{pendingBeats.length}</Text>}
           <Text style={s.target}>{t('game.target')}: {t(`rg.${targetRegion}`, {}, state.regions[targetRegion]?.name ?? '—')}</Text>
           {rescueLog.length > 0 && <Text style={s.rescue}>🛟 {rescueLog.length}</Text>}
         </View>
@@ -107,6 +121,14 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(16,22,37,0.92)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: '#e6b42255', zIndex: 20,
   },
   thinkingText: { color: '#e6b422', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+  ambient: {
+    position: 'absolute', top: 8, left: 12, right: 60, flexDirection: 'row', gap: 6, alignItems: 'center',
+    backgroundColor: 'rgba(16,22,37,0.95)', borderColor: '#3a4a6b', borderWidth: 1, borderRadius: 12,
+    paddingHorizontal: 12, paddingVertical: 8, zIndex: 24,
+  },
+  ambientIcon: { fontSize: 14 },
+  ambientText: { flex: 1, color: '#b7c3da', fontSize: 12, fontWeight: '700' },
+  pending: { color: '#d78ae8', fontSize: 10, fontWeight: '900' },
   infoBar: {
     flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#101625ee',
     paddingHorizontal: 10, paddingVertical: 6, borderTopWidth: 1, borderTopColor: '#26324a',

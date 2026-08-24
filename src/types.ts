@@ -146,8 +146,12 @@ export interface BeatResult {
 
 export interface GameEvent {
   turn: number;
+  week: number;
   headline: string;
   beat: string;
+  kind: 'beat' | 'dialogue' | 'decision' | 'week' | 'headline' | 'ending';
+  dialogue?: DialogueLine[];
+  ops?: string[];
 }
 
 export interface PlayerActionDef {
@@ -188,6 +192,7 @@ export type Screen =
   | 'game'
   | 'settings'
   | 'codex'
+  | 'chronicle'
   | 'ending';
 
 export type Provider = 'anthropic' | 'gemini' | 'openai-compat' | 'offline';
