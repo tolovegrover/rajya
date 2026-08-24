@@ -2,6 +2,7 @@ import { GameState, WorldOp, FactionId } from '../types';
 import { cloneState, recompute } from './gameState';
 import { clamp, rand, pick, noise, pickWeighted } from './util';
 import { ROYAL_TITLES } from '../data/india';
+import { t } from '../i18n';
 
 export function tick(s: GameState): { state: GameState; ops: WorldOp[] } {
   const n = cloneState(s);
@@ -61,13 +62,13 @@ export function tick(s: GameState): { state: GameState; ops: WorldOp[] } {
     if (!rg.kingdom && (chaosPath || nostalgiaPath)) {
       rg.kingdom = true;
       rg.loyalty = clamp(rg.loyalty - 25, 0, 100);
-      ops.push({ op: 'restoreroyal', region: rg.id, king: ROYAL_TITLES[rg.id] });
+      ops.push({ op: 'restoreroyal', region: rg.id, king: t(`royal.${rg.id}`, {}, ROYAL_TITLES[rg.id]) });
     }
 
     if (rg.separatist > 82 && rand() < 0.15) {
       n.legitimacy = clamp(n.legitimacy - 4, 0, 100);
       ops.push({ op: 'legitimacy', delta: -4 });
-      ops.push({ op: 'headline', text: `${rg.name.toUpperCase()} SECESSION CRISIS: THE MAP TREMBLES` });
+      ops.push({ op: 'headline', text: t('tick.secession', { region: rg.name }) });
     }
   }
 
@@ -91,14 +92,14 @@ export function tick(s: GameState): { state: GameState; ops: WorldOp[] } {
       ]);
       ops.push({ op: 'election', region: rg.id, winner });
     }
-    ops.push({ op: 'headline', text: 'ELECTION NIGHT: FOUR STATES, ONE QUESTION — WHOSE TURN?' });
+    ops.push({ op: 'headline', text: t('tick.election') });
   }
 
   const chaoses = ['defection', 'sting', 'absurd', 'betrayal'];
   if (rand() < eta * 0.12) {
     const rg = pick(Object.values(n.regions).filter((r) => !r.kingdom));
     ops.push({ op: 'unrest', region: rg.id, delta: 7 });
-    ops.push({ op: 'headline', text: `${pick(chaoses).toUpperCase()} SHOCKER HITS ${rg.name.toUpperCase()}` });
+    ops.push({ op: 'headline', text: t('tick.chaos', { kind: t(`chaos.${pick(chaoses)}`), region: rg.name }) });
   }
 
   recompute(n);
@@ -114,64 +115,38 @@ export function checkEnding(n: GameState): GameState['ending'] {
     if (n.factions.rajwada.power >= 60) {
       return {
         id: 'iron_crown',
-        title: 'The Iron Crown',
-        text:
-          n.role === 'royalist'
-            ? 'With the Republic\'s legitimacy at zero, Gen. Rudra Pratap made the shortest broadcast in history: "The Court returns what was loaned." Vikramaditya IV entered the capital not as a conqueror but as an appointment. You wrote that appointment.'
-            : n.role === 'oligarch' && n.influence >= 70
-              ? 'With legitimacy at zero, the Crown\'s Court chose the quiet option: the Maharaja, escorted by troops your money fed for years. The throne rises; the ledger clears; the Kingmaker is history\'s footnote with everyone\'s debts on file.'
-              : 'With legitimacy at zero, the generals chose restoration over rule. Vikramaditya IV returned to a capital that had forgotten how to kneel, and remembered quickly. The Republic\'s strategists are already rewriting their memoirs in exile.',
+        title: t('end.iron_crown.title'),
+        text: t(`end.iron_crown.${n.role === 'royalist' ? 'royalist' : kingmaker ? 'oligarch' : 'other'}`),
       };
     }
     return {
       id: 'chaos',
-      title: 'The Silence of the Sirens',
-      text:
-        n.role === 'strategist'
-          ? 'With legitimacy at zero, Gen. Rudra Pratap read a one-paragraph statement on national television. The Republic did not fall with a bang, but with a bulletin. You are advised to leave the capital quietly.'
-          : 'The Republic dissolved into static. The Crown\'s Court took charge "for a period nobody defined". Your assets, unlike your allies, survived.',
+      title: t('end.chaos.title'),
+      text: t(`end.chaos.${n.role === 'strategist' ? 'strategist' : 'other'}`),
     };
   }
   if (n.royalPopPct >= 30) {
     return {
       id: 'age_of_rajyas',
-      title: 'The Age of Rajyas',
-      text:
-        n.role === 'royalist'
-          ? `Thirty percent of Bharatam lives under restored crowns. Vikramaditya IV thanks you with a title, a jagir, and the best chair in the durbar. The experiment in elections is remembered as "the interregnum".`
-          : `The map shattered into coronations. Vikramaditya IV holds court over what remains; ${kingmaker ? 'and it is whispered the new order runs on your money.' : 'and the strategists of the old Republic scatter into exile.'}`,
+      title: t('end.age_of_rajyas.title'),
+      text: t(`end.age_of_rajyas.${n.role === 'royalist' ? 'royalist' : kingmaker ? 'kingmaker' : 'other'}`),
     };
   }
   if (n.factions.swarna.power >= 76 && n.factions.bahujan.power <= 20) {
     return {
       id: 'quota_repealed',
-      title: 'The Merit Restoration',
-      text:
-        n.role === 'agitator'
-          ? 'Parliament repealed the quota framework in a stormy midnight session. Devraj wept on camera; Ramrao vowed to fight on; the constitutional court prepared for a decade of war. Your movement remade the republic — for better or worse, history now argues.'
-          : 'Parliament repealed the quota framework. The Swarna Aandolan owns the republic\'s new rulebook, and the streets are already drafting its rebuttal.',
+      title: t('end.quota_repealed.title'),
+      text: t(`end.quota_repealed.${n.role === 'agitator' ? 'agitator' : 'other'}`),
     };
   }
   if (n.turn >= 120) {
     if (n.stability >= 60 && n.role === 'strategist') {
-      return {
-        id: 'republic_endures',
-        title: 'The Republic Endures',
-        text: 'One hundred and twenty weeks of fire, and the tricolour still means something. Moni credits the people; Amir Sahab credits the files; you know exactly who to credit. Democracy: defended, dented, alive.',
-      };
+      return { id: 'republic_endures', title: t('end.republic_endures.title'), text: t('end.republic_endures.text') };
     }
-    if (n.role === 'oligarch' && n.influence >= 70) {
-      return {
-        id: 'kingmaker',
-        title: 'The Kingmaker',
-        text: 'The term ended with the Republic battered but standing — and every party that survived it owes you. No crown, no chair: just the quiet knowledge that nothing moves without your nod.',
-      };
+    if (kingmaker) {
+      return { id: 'kingmaker', title: t('end.kingmaker.title'), text: t('end.kingmaker.text') };
     }
-    return {
-      id: 'limp',
-      title: 'Battered but Breathing',
-      text: 'The term limped to its end. The Republic survives the way an old car does — loudly, and only downhill. The voters are already queuing to answer for all of you.',
-    };
+    return { id: 'limp', title: t('end.limp.title'), text: t('end.limp.text') };
   }
   return null;
 }

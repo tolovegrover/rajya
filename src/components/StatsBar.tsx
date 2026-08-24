@@ -2,9 +2,12 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { GameState } from '../types';
 import { PLAYER_ROLES } from '../data/factions';
+import { t } from '../i18n';
+import { useLang } from '../store';
 
 export function StatsBar({ state }: { state: GameState }) {
   const role = PLAYER_ROLES.find((r) => r.id === state.role);
+  useLang();
   const cell = (label: string, value: string, color: string) => (
     <View style={styles.cell}>
       <Text style={styles.label}>{label}</Text>
@@ -13,14 +16,14 @@ export function StatsBar({ state }: { state: GameState }) {
   );
   return (
     <View style={styles.bar}>
-      {cell('WEEK', `${state.week}·${String(state.year).slice(2)}`, '#e6b422')}
-      {cell('TREASURY', `${Math.round(state.treasury)}`, '#7aa35a')}
-      {cell('LEGITIMACY', `${Math.round(state.legitimacy)}`, state.legitimacy > 50 ? '#4d8fd1' : '#c96a3f')}
-      {cell('STABILITY', `${Math.round(state.stability)}`, state.stability > 50 ? '#4d8fd1' : '#c96a3f')}
-      {cell('INFLUENCE', `${Math.round(state.influence)}`, '#c93fd1')}
+      {cell(t('stat.week'), `${state.week}·${String(state.year).slice(2)}`, '#e6b422')}
+      {cell(t('stat.treasury'), `${Math.round(state.treasury)}`, '#7aa35a')}
+      {cell(t('stat.legitimacy'), `${Math.round(state.legitimacy)}`, state.legitimacy > 50 ? '#4d8fd1' : '#c96a3f')}
+      {cell(t('stat.stability'), `${Math.round(state.stability)}`, state.stability > 50 ? '#4d8fd1' : '#c96a3f')}
+      {cell(t('stat.influence'), `${Math.round(state.influence)}`, '#c93fd1')}
       {cell('η', state.eta.toFixed(2), '#8b8b8b')}
       <View style={styles.role}>
-        <Text style={styles.roleText} numberOfLines={2}>{role?.name ?? ''}</Text>
+        <Text style={styles.roleText} numberOfLines={2}>{t(`role.${state.role}.name`, {}, role?.name ?? '')}</Text>
       </View>
     </View>
   );

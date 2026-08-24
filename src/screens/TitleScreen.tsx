@@ -3,50 +3,50 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useGame, useSettings } from '../store';
 import { CharacterPortrait } from '../components/CharacterPortrait';
 import { CHARACTERS } from '../data/characters';
+import { LanguageBar } from '../components/LanguageBar';
+import { t } from '../i18n';
 
 export function TitleScreen() {
   const { setScreen } = useGame();
   const settings = useSettings((s) => s.settings);
+  useSettings((s) => s.settings.lang);
   const load = useSettings((s) => s.load);
   useEffect(() => {
     void load();
   }, [load]);
 
   const cast = ['moni', 'amir', 'devraj', 'vikram', 'moomta', 'thikait'];
-  const aiLabel = settings.provider === 'offline' ? 'AI: OFFLINE ENGINE' : settings.provider === 'anthropic' ? 'AI: CLAUDE' : settings.provider === 'gemini' ? 'AI: GEMINI' : 'AI: COMPATIBLE API';
+  const aiLabel = settings.provider === 'offline' ? t('ai.offline') : settings.provider === 'anthropic' ? 'CLAUDE' : settings.provider === 'gemini' ? 'GEMINI' : t('ai.compat');
 
   return (
     <View style={s.wrap}>
-      <Text style={s.kicker}>A POLITICAL DRAMA OF THE NEAR EAST</Text>
+      <Text style={s.kicker}>{t('title.kicker')}</Text>
       <Text style={s.title}>RAJYA</Text>
-      <Text style={s.subtitle}>Rise of Kings</Text>
+      <Text style={s.subtitle}>{t('title.sub')}</Text>
       <View style={s.cast}>
         {cast.map((id) => {
           const c = CHARACTERS.find((x) => x.id === id);
           return c ? <CharacterPortrait key={id} spec={c.avatar} size={52} /> : null;
         })}
       </View>
-      <Text style={s.blurb}>
-        The Republic is 75. The streets are loud, the palaces are dusty, and the throne is
-        patient. Run the democracy — or bring back the kings. Every playthrough is narrated
-        live by an AI Game Master; the map, not the textbox, is the story.
-      </Text>
+      <Text style={s.blurb}>{t('title.blurb')}</Text>
+      <LanguageBar />
       <Pressable style={s.btn} onPress={() => setScreen('disclaimer')}>
-        <Text style={s.btnText}>NEW CAMPAIGN ▸</Text>
+        <Text style={s.btnText}>{t('title.new')} ▸</Text>
       </Pressable>
       <Pressable style={s.btn2} onPress={() => setScreen('settings')}>
-        <Text style={s.btn2Text}>AI SETUP ({aiLabel})</Text>
+        <Text style={s.btn2Text}>{t('title.ai')} · {aiLabel}</Text>
       </Pressable>
       <Pressable style={s.btn2} onPress={() => setScreen('codex')}>
-        <Text style={s.btn2Text}>CODEX · CAST & MANUAL</Text>
+        <Text style={s.btn2Text}>{t('title.codex')}</Text>
       </Pressable>
-      <Text style={s.foot}>A work of satire. All characters fictional.</Text>
+      <Text style={s.foot}>{t('title.foot')}</Text>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  wrap: { flex: 1, backgroundColor: '#0b0f1a', alignItems: 'center', justifyContent: 'center', padding: 24, gap: 10 },
+  wrap: { flex: 1, backgroundColor: '#0b0f1a', alignItems: 'center', justifyContent: 'center', padding: 20, gap: 9 },
   kicker: { color: '#c96a3f', fontSize: 10, letterSpacing: 3, fontWeight: '800' },
   title: { color: '#e6b422', fontSize: 64, fontWeight: '900', letterSpacing: 6 },
   subtitle: { color: '#eef1f8', fontSize: 18, fontWeight: '300', letterSpacing: 8, marginBottom: 6 },

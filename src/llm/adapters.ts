@@ -49,40 +49,32 @@ export function claudeClient(settings: LLMSettings, model: string): LLMClient {
 }
 
 export function compatClient(baseUrl: string, key: string, model: string): LLMClient {
-  const url = baseUrl.replace(/\/+$/, '') + '/chat/completions';
+  const base = baseUrl.replace(/\/+$/, '');
+  const isAzure = base.includes('openai.azure.com');
+  const url = isAzure
+    ? `${base}/openai/deployments/${model}/chat/completions?api-version=2024-10-21`
+    : `${base}/chat/completions`;
+  const headers = (k: string): Record<string, string> =>
+    isAzure
+      ? { 'content-type': 'application/json', 'api-key': k }
+      : { 'content-type': 'application/json', authorization: `Bearer ${k}` };
+  const body = (req: LLMRequest) =>
+    JSON.stringify({
+      model,
+      max_tokens: req.maxTokens ?? DEFAULT_MAX,
+      messages: [
+        { role: 'system', content: req.system },
+        { role: 'user', content: req.user },
+      ],
+    });
   return {
-    name: `compat:${model}`,
+    name: isAzure ? `azure:${model}` : `compat:${model}`,
     async complete(req: LLMRequest) {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${key}`,
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: req.maxTokens ?? DEFAULT_MAX,
-          messages: [
-            { role: 'system', content: req.system },
-            { role: 'user', content: req.user },
-          ],
-        }),
-      });
+      const res = await fetch(url, { method: 'POST', headers: headers(key), body: body(req) });
       if (!res.ok) {
         if (res.status === 429) {
           await wait(1800);
-          const retry = await fetch(url, {
-            method: 'POST',
-            headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
-            body: JSON.stringify({
-              model,
-              max_tokens: req.maxTokens ?? DEFAULT_MAX,
-              messages: [
-                { role: 'system', content: req.system },
-                { role: 'user', content: req.user },
-              ],
-            }),
-          });
+          const retry = await fetch(url, { method: 'POST', headers: headers(key), body: body(req) });
           if (!retry.ok) throw new HttpError(retry.status, await retry.text());
           const d = (await retry.json()) as { choices?: { message?: { content?: string } }[] };
           return d.choices?.[0]?.message?.content ?? '';
@@ -93,6 +85,19 @@ export function compatClient(baseUrl: string, key: string, model: string): LLMCl
       return data.choices?.[0]?.message?.content ?? '';
     },
   };
+}
+
+export async function testConnection(settings: LLMSettings): Promise<{ ok: boolean; detail: string }> {
+  const client = mainClient(settings);
+  if (!client) return { ok: false, detail: 'No provider/key configured — pick a provider and enter a key first.' };
+  try {
+    const t = await client.complete({ system: 'You are a connectivity test.', user: 'Reply with the single word OK.', maxTokens: 10 });
+    const trimmed = t.trim();
+    if (trimmed) return { ok: true, detail: `${client.name} replied: ${trimmed.slice(0, 40)}` };
+    return { ok: false, detail: `${client.name} connected but returned an empty reply.` };
+  } catch (e) {
+    return { ok: false, detail: e instanceof Error ? e.message.slice(0, 160) : String(e) };
+  }
 }
 
 export function geminiClient(settings: LLMSettings, model: string): LLMClient {

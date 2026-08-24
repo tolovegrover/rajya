@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  GameState, LLMSettings, Screen, BeatResult, MapFx, RescueLogEntry, DialogueLine, WorldOp,
+  GameState, LLMSettings, Screen, BeatResult, MapFx, RescueLogEntry, DialogueLine, WorldOp, Character,
 } from './types';
 import { createGame } from './engine/gameState';
+import { t, setLang } from './i18n';
 import { applyOps } from './engine/reducer';
 import { resolveAction, ACTIONS } from './engine/resolver';
 import { tick } from './engine/tick';
@@ -13,6 +14,7 @@ import { fallbackBeat } from './llm/fallback';
 const SETTINGS_KEY = 'rajya_settings_v1';
 
 export const DEFAULT_SETTINGS: LLMSettings = {
+  lang: 'hi',
   provider: 'offline',
   anthropicKey: '',
   anthropicModel: 'claude-sonnet-4-5',
@@ -24,9 +26,10 @@ export const DEFAULT_SETTINGS: LLMSettings = {
   compatKey2: '',
   compatModel2: '',
   flashModel: '',
-  language: 'English (or Hinglish if the player writes Hinglish)',
+  language: '',
   gmDirective: '',
   personaOverrides: {},
+  customCharacters: [],
   rescue: true,
 };
 
@@ -36,6 +39,8 @@ interface SettingsStore {
   load: () => Promise<void>;
   setSettings: (patch: Partial<LLMSettings>) => void;
   setPersona: (id: string, text: string) => void;
+  addCharacter: (c: Character) => void;
+  removeCharacter: (id: string) => void;
 }
 
 export const useSettings = create<SettingsStore>((set, get) => ({
@@ -46,7 +51,9 @@ export const useSettings = create<SettingsStore>((set, get) => ({
       const raw = await AsyncStorage.getItem(SETTINGS_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<LLMSettings>;
-        set({ settings: { ...DEFAULT_SETTINGS, ...parsed } });
+        const settings = { ...DEFAULT_SETTINGS, ...parsed };
+        setLang(settings.lang);
+        set({ settings });
       }
     } catch {
       set({ settings: DEFAULT_SETTINGS });
@@ -55,11 +62,24 @@ export const useSettings = create<SettingsStore>((set, get) => ({
   },
   setSettings(patch) {
     const settings = { ...get().settings, ...patch };
+    if (patch.lang) setLang(patch.lang);
     set({ settings });
     AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)).catch(() => undefined);
   },
   setPersona(id, text) {
     const settings = { ...get().settings, personaOverrides: { ...get().settings.personaOverrides, [id]: text } };
+    set({ settings });
+    AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)).catch(() => undefined);
+  },
+  addCharacter(c) {
+    const customCharacters = [...get().settings.customCharacters.filter((x) => x.id !== c.id), c];
+    const settings = { ...get().settings, customCharacters };
+    set({ settings });
+    AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)).catch(() => undefined);
+  },
+  removeCharacter(id) {
+    const customCharacters = get().settings.customCharacters.filter((x) => x.id !== id);
+    const settings = { ...get().settings, customCharacters };
     set({ settings });
     AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)).catch(() => undefined);
   },
@@ -127,7 +147,7 @@ export const useGame = create<GameStore>((set, get) => ({
   beat: null,
   dialogueQueue: [],
   fx: [],
-  ticker: ['REPUBLIC OF BHARATAM: ALL SYSTEMS NOMINAL, ALL MINISTERS DENYING'],
+  ticker: [t('store.t1')],
   thinking: false,
   rescueLog: [],
   selectedRegion: null,
@@ -164,7 +184,7 @@ export const useGame = create<GameStore>((set, get) => ({
       beat: null,
       dialogueQueue: [],
       fx: [],
-      ticker: ['CAMPAIGN OPENS: THE REPUBLIC HOLDS ITS BREATH', 'PALACES REPORT "ROUTINE DUSTING" OF THRONES'],
+      ticker: [t('store.t2'), t('store.t3')],
       rescueLog: [],
       selectedRegion: null,
       paused: false,
@@ -221,7 +241,7 @@ export const useGame = create<GameStore>((set, get) => ({
       fx: [...get().fx, ...newFx].slice(-24),
       ticker: [outcome.headline.toUpperCase().slice(0, 90), ...get().ticker].slice(0, 12),
     });
-    const label = ACTIONS[state.role].find((a) => a.id === actionId)?.label ?? actionId;
+    const label = t(`act.${actionId}`, {}, ACTIONS[state.role].find((a) => a.id === actionId)?.label ?? actionId);
     await get().requestBeat('action', targetRegion, label, outcome.headline, outcome.ops);
   },
 
@@ -274,7 +294,7 @@ export const useGame = create<GameStore>((set, get) => ({
     set({
       state: { ...applied.state, pendingDilemma: null },
       fx: [...get().fx, ...fxFromOps(applied.applied, applied.state.turn)].slice(-24),
-      ticker: [`DECISION TAKEN: ${option.label.toUpperCase()}`, ...get().ticker].slice(0, 12),
+      ticker: [t('store.decision', { label: option.label }), ...get().ticker].slice(0, 12),
     });
   },
 }));
@@ -291,3 +311,6 @@ function hottest(s: GameState): string {
   }
   return best;
 }
+
+/** Subscribe a component to the interface language so it re-renders on change. */
+export const useLang = () => useSettings((s) => s.settings.lang);

@@ -1,17 +1,24 @@
-import { REGIONS } from '../data/india';
+import { buildRegions } from '../data/india';
 import { FACTIONS, PLAYER_ROLES } from '../data/factions';
 import { CHARACTERS } from '../data/characters';
 import { GameState, PlayerRoleId, Region, Faction, FactionId, Character } from '../types';
+import { t } from '../i18n';
 
 export const cloneState = (s: GameState): GameState => JSON.parse(JSON.stringify(s)) as GameState;
 
-export function createGame(role: PlayerRoleId, eta: number): GameState {
-  const regions: Record<string, Region> = {};
-  for (const rg of REGIONS) regions[rg.id] = { ...rg };
+export function createGame(role: PlayerRoleId, eta: number, customCharacters: Character[] = []): GameState {
+  const regions = buildRegions();
   const factions: Record<FactionId, Faction> = {} as Record<FactionId, Faction>;
   for (const f of FACTIONS) factions[f.id] = { ...f };
   const characters: Record<string, Character> = {};
-  for (const c of CHARACTERS) characters[c.id] = { ...c };
+  for (const c of [...CHARACTERS, ...customCharacters]) {
+    characters[c.id] = {
+      ...c,
+      name: t(`char.${c.id}.name`, {}, c.name),
+      title: t(`char.${c.id}.title`, {}, c.title),
+      persona: t(`char.${c.id}.persona`, {}, c.persona),
+    };
+  }
   const pr = PLAYER_ROLES.find((p) => p.id === role) ?? PLAYER_ROLES[0];
   return {
     turn: 0,
@@ -29,8 +36,8 @@ export function createGame(role: PlayerRoleId, eta: number): GameState {
     eventLog: [
       {
         turn: 0,
-        headline: "REPUBLIC AT 75: FREEDOM'S BIRTHDAY CAKE CUT WITH CAUTION",
-        beat: 'The Republic of Bharatam enters its 76th year. The papers print the usual supplements; the streets print other things. Somewhere, a palace dusts its thrones.',
+        headline: t('gs.headline'),
+        beat: t('gs.beat'),
       },
     ],
     pendingDilemma: null,

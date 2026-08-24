@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { useGame } from '../store';
+import { useGame, useLang } from '../store';
+import { t } from '../i18n';
 import { CHARACTERS } from '../data/characters';
 import { FACTIONS, PLAYER_ROLES } from '../data/factions';
 import { CharacterPortrait } from '../components/CharacterPortrait';
@@ -12,14 +13,15 @@ export function CodexScreen() {
   const state = useGame((g) => g.state);
   const rescueLog = useGame((g) => g.rescueLog);
   const [tab, setTab] = useState<Tab>('cast');
+  useLang();
   const hasGame = !!state && !state.ending;
 
   return (
     <View style={s.wrap}>
       <View style={s.tabs}>
-        {(['cast', 'factions', 'manual', 'log'] as Tab[]).map((t) => (
-          <Pressable key={t} style={[s.tab, tab === t && s.tabSel]} onPress={() => setTab(t)}>
-            <Text style={[s.tabText, tab === t && { color: '#0b0f1a' }]}>{t.toUpperCase()}</Text>
+        {(['cast', 'factions', 'manual', 'log'] as Tab[]).map((x) => (
+          <Pressable key={x} style={[s.tab, tab === x && s.tabSel]} onPress={() => setTab(x)}>
+            <Text style={[s.tabText, tab === x && { color: '#0b0f1a' }]}>{t(`codex.${x}`)}</Text>
           </Pressable>
         ))}
       </View>
@@ -30,9 +32,9 @@ export function CodexScreen() {
               <View style={s.castRow}>
                 <CharacterPortrait spec={c.avatar} size={56} />
                 <View style={{ flex: 1 }}>
-                  <Text style={s.name}>{c.name}</Text>
-                  <Text style={s.title}>{c.title}</Text>
-                  <Text style={s.persona} numberOfLines={4}>{c.persona}</Text>
+                  <Text style={s.name}>{t(`char.${c.id}.name`, {}, c.name)}</Text>
+                  <Text style={s.title}>{t(`char.${c.id}.title`, {}, c.title)}</Text>
+                  <Text style={s.persona} numberOfLines={4}>{t(`char.${c.id}.persona`, {}, c.persona)}</Text>
                 </View>
               </View>
             </View>
@@ -40,38 +42,38 @@ export function CodexScreen() {
         {tab === 'factions' &&
           (state ? Object.values(state.factions) : FACTIONS).map((f) => (
             <View key={f.id} style={s.card}>
-              <Text style={s.name}>{f.name}</Text>
-              <Text style={s.title}>led by {CHARACTERS.find((c) => c.id === f.leader)?.name ?? '—'}</Text>
+              <Text style={s.name}>{t(`fac.${f.id}`, {}, f.name)}</Text>
+              <Text style={s.title}>{t('codex.ledby')} {t(`char.${f.leader}.name`, {}, CHARACTERS.find((c) => c.id === f.leader)?.name ?? '—')}</Text>
               {state && (
                 <View style={s.powerRow}>
                   <View style={[s.powerBar, { width: `${Math.round(f.power)}%` }]} />
-                  <Text style={s.powerText}>POWER {Math.round(f.power)}</Text>
+                  <Text style={s.powerText}>{t('codex.power')} {Math.round(f.power)}</Text>
                 </View>
               )}
             </View>
           ))}
         {tab === 'manual' && (
           <>
-            <Text style={s.h}>HOW TO PLAY</Text>
-            <Text style={s.p}>Time flows: one week every 6 seconds. Tap a region to inspect it and set it as your TARGET — every move you make lands there and ripples to neighbours.</Text>
-            <Text style={s.p}>Watch the four heats: UNREST (streets), QUOTA-HEAT (reservation war), LAND-HEAT (farmers & acquisition), ROYALIST (throne nostalgia). Unrest over 85 can erupt into riots; unrest + royalist over their thresholds can restore a throne — the region crowns its old rajya and leaves the Republic.</Text>
-            <Text style={s.p}>Your actions are resolved by a deterministic engine (odds shown in the beat card), then the AI Game Master narrates what happened and adds twists — every twist is an operation the engine validates and clamps. Dilemmas pause time: choose, and live with it.</Text>
-            <Text style={s.h}>WIN CONDITIONS BY ROLE</Text>
+            <Text style={s.h}>{t('codex.howto')}</Text>
+            <Text style={s.p}>{t('codex.p1')}</Text>
+            <Text style={s.p}>{t('codex.p2')}</Text>
+            <Text style={s.p}>{t('codex.p3')}</Text>
+            <Text style={s.h}>{t('codex.winh')}</Text>
             {PLAYER_ROLES.map((r) => (
-              <Text key={r.id} style={s.p}>▸ {r.name}: {r.winText}</Text>
+              <Text key={r.id} style={s.p}>▸ {t(`role.${r.id}.name`, {}, r.name)}: {t(`role.${r.id}.win`, {}, r.winText)}</Text>
             ))}
-            <Text style={s.h}>ENDINGS</Text>
-            <Text style={s.p}>The Republic Endures · Age of Rajyas · The Iron Crown · The Silence of the Sirens (military takeover at legitimacy 0) · The Kingmaker (oligarch) · The Merit Restoration (quota repealed).</Text>
-            <Text style={s.h}>THE AI CONTRACT</Text>
-            <Text style={s.p}>The GM may only speak in a fixed vocabulary of world operations (unrest, loyalty, royalist, separatist, heats, protests, riots, armies, crowns, elections, headlines), max 5 per beat, deltas clamped. Its refusals trigger the rescue ladder: reframe → neutral rewrite → historian transform → offline engine. The game never stalls.</Text>
+            <Text style={s.h}>{t('codex.endh')}</Text>
+            <Text style={s.p}>{t('codex.endp')}</Text>
+            <Text style={s.h}>{t('codex.aih')}</Text>
+            <Text style={s.p}>{t('codex.aip')}</Text>
           </>
         )}
         {tab === 'log' && (
           <>
-            {rescueLog.length === 0 && <Text style={s.p}>No rescues yet. The Game Master has been cooperative.</Text>}
+            {rescueLog.length === 0 && <Text style={s.p}>{t('codex.norescue')}</Text>}
             {rescueLog.map((e, i) => (
               <View key={i} style={s.card}>
-                <Text style={s.logTier}>TIER {e.tier} · TURN {e.turn}</Text>
+                <Text style={s.logTier}>{t('codex.tier', { t: e.tier, n: e.turn })}</Text>
                 <Text style={s.p}>{e.note}</Text>
                 <Text style={s.logOrig}>{e.originalRequest.slice(0, 160)}…</Text>
               </View>
@@ -80,7 +82,7 @@ export function CodexScreen() {
         )}
       </ScrollView>
       <Pressable style={s.done} onPress={() => setScreen(hasGame ? 'game' : 'title')}>
-        <Text style={s.doneText}>◂ BACK</Text>
+        <Text style={s.doneText}>◂ {t('common.back')}</Text>
       </Pressable>
     </View>
   );

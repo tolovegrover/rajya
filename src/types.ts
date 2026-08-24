@@ -1,10 +1,20 @@
+import type { Lang } from './i18n.types';
+
 export type RegionId = string;
+
+export interface RegionGeometry {
+  rings: [number, number][][];
+  center: [number, number];
+  city: string;
+  cityAt: [number, number];
+  neighbors: RegionId[];
+}
 
 export interface Region {
   id: RegionId;
   name: string;
   rajyaName?: string;
-  poly: [number, number][];
+  rings: [number, number][][];
   center: [number, number];
   city: string;
   cityAt: [number, number];
@@ -181,6 +191,7 @@ export type Screen =
 export type Provider = 'anthropic' | 'gemini' | 'openai-compat' | 'offline';
 
 export interface LLMSettings {
+  lang: Lang;
   provider: Provider;
   anthropicKey: string;
   anthropicModel: string;
@@ -195,6 +206,7 @@ export interface LLMSettings {
   language: string;
   gmDirective: string;
   personaOverrides: Record<string, string>;
+  customCharacters: Character[];
   rescue: boolean;
 }
 

@@ -2,11 +2,13 @@ import React from 'react';
 import { View, Text, Modal, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { BeatResult, GameState } from '../types';
 import { opTitle } from '../engine/reducer';
+import { t } from '../i18n';
+import { useLang } from '../store';
 
 const SOURCE_BADGE = (b: BeatResult) => {
-  if (b.source === 'llm' && !b.rescueTier) return { text: '⚡ AI GAME MASTER', color: '#4d8fd1' };
-  if (b.source === 'rescue') return { text: `🛟 RESCUE T${b.rescueTier}`, color: '#c93fd1' };
-  return { text: '⚙ OFFLINE ENGINE', color: '#7f8ea3' };
+  if (b.source === 'llm' && !b.rescueTier) return { text: `⚡ ${t('badge.gm')}`, color: '#4d8fd1' };
+  if (b.source === 'rescue') return { text: `🛟 ${t('badge.rescue', { n: b.rescueTier ?? 0 })}`, color: '#c93fd1' };
+  return { text: `⚙ ${t('ai.offline')}`, color: '#7f8ea3' };
 };
 
 export function EventCard({
@@ -20,6 +22,7 @@ export function EventCard({
   onContinue: () => void;
   onChoose: (i: number) => void;
 }) {
+  useLang();
   const badge = SOURCE_BADGE(beat);
   const dilemma = state.pendingDilemma;
   return (
@@ -30,7 +33,7 @@ export function EventCard({
             <View style={[styles.badge, { backgroundColor: badge.color }]}>
               <Text style={styles.badgeText}>{badge.text}</Text>
             </View>
-            <Text style={styles.date}>WEEK {state.week} · {state.year}</Text>
+            <Text style={styles.date}>{t('card.week', { w: state.week, y: state.year })}</Text>
           </View>
           <ScrollView style={{ maxHeight: 260 }}>
             <Text style={styles.beat}>{beat.beat}</Text>
@@ -53,7 +56,7 @@ export function EventCard({
             </View>
           ) : (
             <Pressable style={styles.btn} onPress={onContinue}>
-              <Text style={styles.btnText}>CONTINUE ▸</Text>
+              <Text style={styles.btnText}>{t('common.continue')} ▸</Text>
             </Pressable>
           )}
         </View>

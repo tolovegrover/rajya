@@ -1,42 +1,40 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { useGame, useSettings } from '../store';
+import { useGame, useSettings, useLang } from '../store';
+import { t } from '../i18n';
 import { PLAYER_ROLES } from '../data/factions';
 import { PlayerRoleId } from '../types';
 
 const ETA_PRESETS = [0.1, 0.3, 0.5, 0.7, 0.9];
 
 const etaLabel = (e: number) =>
-  e <= 0.15 ? 'IDEAL — governance mostly works; scandals are rare' :
-  e <= 0.35 ? 'MILD — normal politics, honest coalitions mostly' :
-  e <= 0.6 ? 'LIVELY — defections, stings, quota wars' :
-  e <= 0.8 ? 'VOLATILE — riots proliferate, allies betray' :
-  'CHAOS — the republic runs on noise; anything, anytime';
+  e <= 0.15 ? t('eta.ideal') : e <= 0.35 ? t('eta.mild') : e <= 0.6 ? t('eta.lively') : e <= 0.8 ? t('eta.volatile') : t('eta.chaos');
 
 export function CampaignSetup() {
   const { newGame, setScreen } = useGame();
   const settings = useSettings((s) => s.settings);
   const setSettings = useSettings((s) => s.setSettings);
+  useLang();
   const [role, setRole] = useState<PlayerRoleId>('strategist');
   const [eta, setEta] = useState(0.5);
 
-  const aiLabel = settings.provider === 'offline' ? 'Offline engine (no key)' : settings.provider === 'anthropic' ? `Claude · ${settings.anthropicModel}` : settings.provider === 'gemini' ? `Gemini · ${settings.geminiModel}` : `Compatible API · ${settings.compatModel}`;
+  const aiLabel = settings.provider === 'offline' ? t('setup.offline') : settings.provider === 'anthropic' ? `Claude · ${settings.anthropicModel}` : settings.provider === 'gemini' ? `Gemini · ${settings.geminiModel}` : `Compatible API · ${settings.compatModel}`;
 
   return (
     <View style={s.wrap}>
       <ScrollView contentContainerStyle={{ padding: 18, gap: 14, paddingBottom: 40 }}>
-        <Text style={s.h}>NEW CAMPAIGN</Text>
+        <Text style={s.h}>{t('setup.h')}</Text>
 
-        <Text style={s.label}>1 · CHOOSE YOUR SHADOW</Text>
+        <Text style={s.label}>{t('setup.step1')}</Text>
         {PLAYER_ROLES.map((r) => (
           <Pressable key={r.id} style={[s.roleCard, role === r.id && s.roleSel]} onPress={() => setRole(r.id)}>
-            <Text style={s.roleName}>{r.name}</Text>
-            <Text style={s.roleTag}>{r.tagline}</Text>
-            <Text style={s.roleWin}>WIN · {r.winText}</Text>
+            <Text style={s.roleName}>{t(`role.${r.id}.name`, {}, r.name)}</Text>
+            <Text style={s.roleTag}>{t(`role.${r.id}.tag`, {}, r.tagline)}</Text>
+            <Text style={s.roleWin}>{t('setup.win')} · {t(`role.${r.id}.win`, {}, r.winText)}</Text>
           </Pressable>
         ))}
 
-        <Text style={s.label}>2 · SET THE NOISE η</Text>
+        <Text style={s.label}>{t('setup.step2')}</Text>
         <View style={s.etaRow}>
           {ETA_PRESETS.map((v) => (
             <Pressable key={v} style={[s.etaChip, Math.abs(eta - v) < 0.01 && s.etaSel]} onPress={() => setEta(v)}>
@@ -46,19 +44,19 @@ export function CampaignSetup() {
         </View>
         <Text style={s.etaDesc}>η = {eta.toFixed(2)} — {etaLabel(eta)}</Text>
 
-        <Text style={s.label}>3 · THE NARRATOR</Text>
+        <Text style={s.label}>{t('setup.step3')}</Text>
         <View style={s.aiCard}>
           <Text style={s.aiText}>{aiLabel}</Text>
           <Pressable style={s.aiBtn} onPress={() => setScreen('settings')}>
-            <Text style={s.aiBtnText}>CONFIGURE AI / API KEYS / PERSONAS</Text>
+            <Text style={s.aiBtnText}>{t('setup.configure')}</Text>
           </Pressable>
         </View>
 
         <Pressable style={s.start} onPress={() => newGame(role, eta)}>
-          <Text style={s.startText}>OPEN THE CAMPAIGN ▸</Text>
+          <Text style={s.startText}>{t('setup.start')} ▸</Text>
         </Pressable>
         <Pressable style={s.back} onPress={() => setScreen('title')}>
-          <Text style={s.backText}>◂ BACK</Text>
+          <Text style={s.backText}>◂ {t('common.back')}</Text>
         </Pressable>
       </ScrollView>
     </View>

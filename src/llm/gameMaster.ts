@@ -1,5 +1,5 @@
 import { GameState, LLMSettings, WorldOp, BeatResult, Dilemma, DialogueLine } from '../types';
-import { GM_SYSTEM, worldSummary, stageBlock } from './prompts';
+import { GM_SYSTEM, worldSummary, stageBlock, narrationLanguage } from './prompts';
 import { mainClient, flashClient, LLMClient, LLMRequest } from './adapters';
 import { runWithRescue } from './refusalRescue';
 import { fallbackBeat } from './fallback';
@@ -101,6 +101,8 @@ export async function askGameMaster(
   if (!client) return fb;
 
   const rg = s.regions[ctx.region] ?? Object.values(s.regions)[0];
+  const cast = Object.values(s.characters);
+  const customs = cast.filter((c) => c.id.startsWith('custom_'));
   const stage =
     ctx.kind === 'action'
       ? s.role === 'agitator'
@@ -113,12 +115,13 @@ export async function askGameMaster(
         : ctx.kind === 'royal'
           ? ['vikram', 'moni', 'jogi']
           : ['aarab', 'moni'];
+  const onStage = [...stage, ...customs.filter((c) => c.alive).map((c) => c.id)];
 
   const system = [
-    GM_SYSTEM(s.eta, settings.gmDirective, settings.language),
+    GM_SYSTEM(s.eta, settings.gmDirective, narrationLanguage(settings), cast.map((c) => c.id)),
     '',
     'PERSONAS ON STAGE (write their dialogue in this voice):',
-    stageBlock(settings, stage),
+    stageBlock(settings, onStage),
     settings.gmDirective ? `\nGAME MASTER DIRECTIVE FROM THE PLAYER: ${settings.gmDirective}` : '',
   ].join('\n');
 

@@ -5,6 +5,9 @@ const { resolveAction, ACTIONS, hottestRegion } = require('./engine/resolver');
 const { fallbackBeat } = require('./llm/fallback');
 const { extractJson } = require('./llm/gameMaster');
 const { detectRefusal } = require('./llm/refusalRescue');
+const { t, tList, setLang, LANGS } = require('./i18n');
+const { UI2 } = require('./i18n.ui2');
+const { UI3 } = require('./i18n.ui3');
 
 let failures = 0;
 const check = (name, cond) => {
@@ -63,5 +66,29 @@ check('json: smart quotes repaired', extractJson('{“beat”:”x”}').beat ==
 
 const fb = fallbackBeat(createGame('agitator', 0.7), { kind: 'ambient', region: 'uttardesh', resolverOps: [] });
 check('fallback beat has all fields', !!fb.beat && fb.ticker.length === 3 && fb.dialogue.length >= 1 && fb.source === 'fallback');
+
+
+
+// --- i18n ---
+setLang('hi');
+check('i18n: hindi is usable as default', t('title.new') === 'नया अभियान');
+check('i18n: hindi region names', createGame('strategist', 0.5).regions.uttardesh.name === 'उत्तरदेश');
+check('i18n: hindi offline beat', /[\u0900-\u097F]/.test(fallbackBeat(createGame('strategist', 0.5), { kind: 'riot', region: 'uttardesh', resolverOps: [] }).beat));
+setLang('ta');
+check('i18n: tamil interface', t('title.new') === 'புதிய பிரச்சாரம்');
+check('i18n: untranslated content falls back to english', createGame('strategist', 0.5).regions.uttardesh.name === 'Uttardesh');
+setLang('en');
+check('i18n: english round-trip', t('title.new') === 'NEW CAMPAIGN');
+check('i18n: unknown key uses the fallback', t('nope.nope', {}, 'fallback') === 'fallback');
+check('i18n: vars interpolate', t('card.week', { w: 3, y: 2026 }) === 'WEEK 3 · 2026');
+check('i18n: lists split on |', tList('fb.moni').length === 2);
+const missing = [];
+for (const dict of [UI2, UI3]) {
+  for (const [key, entry] of Object.entries(dict)) {
+    if (!entry.en) missing.push(`${key}.en`);
+    for (const { code } of LANGS) if (!entry[code]) missing.push(`${key}.${code}`);
+  }
+}
+check(`i18n: every UI string exists in all ${LANGS.length} languages (${missing.slice(0, 3).join(', ')})`, missing.length === 0);
 
 process.exit(failures ? 1 : 0);

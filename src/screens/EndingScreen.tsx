@@ -1,36 +1,38 @@
 import React from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { useGame } from '../store';
+import { useGame, useLang } from '../store';
+import { t } from '../i18n';
 import { PLAYER_ROLES } from '../data/factions';
 
 export function EndingScreen() {
   const state = useGame((g) => g.state);
   const setScreen = useGame((g) => g.setScreen);
   const newGame = useGame((g) => g.newGame);
+  useLang();
   if (!state || !state.ending) return null;
   const role = PLAYER_ROLES.find((r) => r.id === state.role);
 
   return (
     <ScrollView style={s.wrap} contentContainerStyle={{ padding: 24, gap: 16, paddingTop: 80, alignItems: 'center' }}>
-      <Text style={s.eyebrow}>THE CAMPAIGN ENDS · WEEK {state.week} · {state.year}</Text>
+      <Text style={s.eyebrow}>{t('endscr.eyebrow', { w: state.week, y: state.year })}</Text>
       <Text style={s.title}>{state.ending.title}</Text>
       <Text style={s.text}>{state.ending.text}</Text>
       <View style={s.statsCard}>
-        <Text style={s.stat}>WEEKS SURVIVED: {state.turn}</Text>
-        <Text style={s.stat}>LEGITIMACY: {Math.round(state.legitimacy)} · STABILITY: {Math.round(state.stability)}</Text>
-        <Text style={s.stat}>POPULATION UNDER CROWNS: {state.royalPopPct}%</Text>
-        <Text style={s.stat}>YOUR ROLE: {role?.name} · INFLUENCE {Math.round(state.influence)}</Text>
-        <Text style={s.stat}>REGIONS RESTORED AS RAJYAS: {Object.values(state.regions).filter((r) => r.kingdom).map((r) => r.name).join(', ') || 'none'}</Text>
+        <Text style={s.stat}>{t('endscr.weeks')}: {state.turn}</Text>
+        <Text style={s.stat}>{t('stat.legitimacy')}: {Math.round(state.legitimacy)} · {t('stat.stability')}: {Math.round(state.stability)}</Text>
+        <Text style={s.stat}>{t('endscr.royalpop')}: {state.royalPopPct}%</Text>
+        <Text style={s.stat}>{t('endscr.role')}: {t(`role.${state.role}.name`, {}, role?.name ?? '')} · {t('stat.influence')} {Math.round(state.influence)}</Text>
+        <Text style={s.stat}>{t('endscr.rajyas')}: {Object.values(state.regions).filter((r) => r.kingdom).map((r) => r.name).join(', ') || t('endscr.none')}</Text>
       </View>
-      <Text style={s.logTitle}>HOW IT HAPPENED</Text>
+      <Text style={s.logTitle}>{t('endscr.how')}</Text>
       {state.eventLog.slice(-8).reverse().map((e, i) => (
         <Text key={i} style={s.logLine}>▸ {e.headline}</Text>
       ))}
       <Pressable style={s.btn} onPress={() => setScreen('setup')}>
-        <Text style={s.btnText}>RUN IT AGAIN ▸</Text>
+        <Text style={s.btnText}>{t('endscr.again')} ▸</Text>
       </Pressable>
       <Pressable style={s.btn2} onPress={() => setScreen('title')}>
-        <Text style={s.btn2Text}>MAIN TITLE</Text>
+        <Text style={s.btn2Text}>{t('endscr.title')}</Text>
       </Pressable>
     </ScrollView>
   );

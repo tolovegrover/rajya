@@ -1,13 +1,13 @@
 import React, { useEffect } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
-import { useGame } from '../store';
+import { useGame, useLang } from '../store';
+import { t } from '../i18n';
 import { IndiaMap, MapLegend } from '../components/IndiaMap';
 import { StatsBar } from '../components/StatsBar';
 import { NewsTicker } from '../components/NewsTicker';
 import { DialogueBox } from '../components/DialogueBox';
 import { EventCard } from '../components/EventCard';
 import { ACTIONS } from '../engine/resolver';
-import { REGIONS } from '../data/india';
 
 export function GameScreen() {
   const {
@@ -15,6 +15,7 @@ export function GameScreen() {
     runTick, doAction, dismissBeat, chooseDilemma, popDialogue, selectRegion, setTarget, setPaused, setScreen,
     rescueLog,
   } = useGame();
+  useLang();
 
   useEffect(() => {
     const iv = setInterval(() => runTick(), 6000);
@@ -38,7 +39,7 @@ export function GameScreen() {
         {thinking && (
           <View style={s.thinking}>
             <ActivityIndicator color="#e6b422" size="small" />
-            <Text style={s.thinkingText}>GAME MASTER IS WRITING HISTORY…</Text>
+            <Text style={s.thinkingText}>{t('game.thinking')}</Text>
           </View>
         )}
         <DialogueBox lines={dialogueQueue} state={state} onDismiss={popDialogue} />
@@ -49,14 +50,14 @@ export function GameScreen() {
           <View style={{ flex: 1 }}>
             <Text style={s.infoName}>{sel.kingdom ? '♛ ' : ''}{sel.name} · {sel.city}</Text>
             <Text style={s.infoStats}>
-              UNREST {Math.round(sel.unrest)} · QUOTA-HEAT {Math.round(sel.reservationHeat)} · LAND {Math.round(sel.landHeat)} · ROYALIST {Math.round(sel.royalist)}{sel.curfew ? ' · CURFEW' : ''}{sel.army ? ' · ARMY' : ''}
+              {t('game.unrest')} {Math.round(sel.unrest)} · {t('game.quota')} {Math.round(sel.reservationHeat)} · {t('game.land')} {Math.round(sel.landHeat)} · {t('game.royalist')} {Math.round(sel.royalist)}{sel.curfew ? ` · ${t('game.curfew')}` : ''}{sel.army ? ` · ${t('game.army')}` : ''}
             </Text>
           </View>
           {targetRegion === sel.id ? (
-            <View style={s.targetOn}><Text style={s.targetOnText}>◎ TARGET</Text></View>
+            <View style={s.targetOn}><Text style={s.targetOnText}>◎ {t('game.target')}</Text></View>
           ) : (
             <Pressable style={s.targetBtn} onPress={() => setTarget(sel.id)}>
-              <Text style={s.targetBtnText}>SET TARGET</Text>
+              <Text style={s.targetBtnText}>{t('game.settarget')}</Text>
             </Pressable>
           )}
           <Pressable onPress={() => selectRegion(null)}><Text style={s.closeInfo}>✕</Text></Pressable>
@@ -73,15 +74,15 @@ export function GameScreen() {
               disabled={thinking || !!beat || !!state.ending}
             >
               <Text style={s.actionIcon}>{a.icon}</Text>
-              <Text style={s.actionLabel}>{a.label}</Text>
+              <Text style={s.actionLabel}>{t(`act.${a.id}`, {}, a.label)}</Text>
               <Text style={s.actionCost}>{a.usesInfluence ? `◎${a.cost}` : `💰${a.cost}`}</Text>
             </Pressable>
           ))}
         </ScrollView>
         <View style={s.footRow}>
-          <Pressable onPress={() => setScreen('codex')}><Text style={s.footBtn}>CODEX</Text></Pressable>
-          <Pressable onPress={() => setScreen('settings')}><Text style={s.footBtn}>AI SETUP</Text></Pressable>
-          <Text style={s.target}>TARGET: {state.regions[targetRegion]?.name ?? '—'}</Text>
+          <Pressable onPress={() => setScreen('codex')}><Text style={s.footBtn}>{t('game.codex')}</Text></Pressable>
+          <Pressable onPress={() => setScreen('settings')}><Text style={s.footBtn}>{t('title.ai')}</Text></Pressable>
+          <Text style={s.target}>{t('game.target')}: {state.regions[targetRegion]?.name ?? '—'}</Text>
           {rescueLog.length > 0 && <Text style={s.rescue}>🛟 {rescueLog.length}</Text>}
         </View>
       </View>

@@ -2,6 +2,7 @@ import { GameState, WorldOp, FactionId, RegionId } from '../types';
 import { cloneState, recompute } from './gameState';
 import { clamp } from './util';
 import { ROYAL_TITLES } from '../data/india';
+import { t } from '../i18n';
 
 const MAX_DELTA = 25;
 const rejected: string[] = [];
@@ -118,23 +119,25 @@ export function applyOps(state: GameState, ops: WorldOp[]): { state: GameState; 
 
 export function opTitle(op: WorldOp, s: GameState): string {
   const rn = (id?: RegionId) => (id && s.regions[id] ? s.regions[id].name : id ?? '');
+  const sign = (n: number) => `${n > 0 ? '+' : ''}${n}`;
   switch (op.op) {
-    case 'unrest': return `Unrest ${op.delta > 0 ? '+' : ''}${op.delta} in ${rn(op.region)}`;
-    case 'loyalty': return `Loyalty ${op.delta > 0 ? '+' : ''}${op.delta} in ${rn(op.region)}`;
-    case 'royalist': return `Royalists ${op.delta > 0 ? '+' : ''}${op.delta} in ${rn(op.region)}`;
-    case 'separatist': return `Separatism ${op.delta > 0 ? '+' : ''}${op.delta} in ${rn(op.region)}`;
-    case 'reservationHeat': return `Quota heat ${op.delta > 0 ? '+' : ''}${op.delta} in ${rn(op.region)}`;
-    case 'landHeat': return `Land heat ${op.delta > 0 ? '+' : ''}${op.delta} in ${rn(op.region)}`;
-    case 'factionPower': return `${op.faction} power ${op.delta > 0 ? '+' : ''}${op.delta}`;
-    case 'treasury': return `Treasury ${op.delta > 0 ? '+' : ''}${op.delta}`;
-    case 'legitimacy': return `Legitimacy ${op.delta > 0 ? '+' : ''}${op.delta}`;
-    case 'curfew': return `${rn(op.region)}: curfew ${op.on ? 'ON' : 'lifted'}`;
-    case 'riot': return `Civil disturbance in ${rn(op.region)} (sev. ${op.severity})`;
-    case 'protest': return `${op.movement} protest in ${rn(op.region)} (size ${op.size})`;
-    case 'armyMove': return `Army: ${rn(op.from)} → ${rn(op.to)}`;
-    case 'restoreroyal': return `${ROYAL_TITLES[op.region] ?? 'Throne'} restored in ${rn(op.region)}`;
-    case 'election': return `Election in ${rn(op.region)}: ${op.winner}`;
-    case 'character': return `${op.id}: mood ${op.moodDelta ?? 0}${op.kill ? ' †' : ''}`;
+    case 'unrest':
+    case 'loyalty':
+    case 'royalist':
+    case 'separatist':
+    case 'reservationHeat':
+    case 'landHeat':
+      return `${t(`op.${op.op}`)} ${sign(op.delta)} · ${rn(op.region)}`;
+    case 'factionPower': return `${t(`fac.${op.faction}`, {}, op.faction)} ${t('op.power')} ${sign(op.delta)}`;
+    case 'treasury': return `${t('stat.treasury')} ${sign(op.delta)}`;
+    case 'legitimacy': return `${t('stat.legitimacy')} ${sign(op.delta)}`;
+    case 'curfew': return `${rn(op.region)}: ${op.on ? t('op.curfewon') : t('op.curfewoff')}`;
+    case 'riot': return t('op.riot', { r: rn(op.region), n: op.severity });
+    case 'protest': return t('op.protest', { r: rn(op.region), n: op.size });
+    case 'armyMove': return t('op.armyMove', { a: rn(op.from), b: rn(op.to) });
+    case 'restoreroyal': return t('op.restore', { r: rn(op.region), title: t(`royal.${op.region}`, {}, ROYAL_TITLES[op.region] ?? 'Throne') });
+    case 'election': return t('op.election', { r: rn(op.region), f: t(`fac.${op.winner}`, {}, op.winner) });
+    case 'character': return t('op.mood', { c: s.characters[op.id]?.name ?? op.id, n: op.moodDelta ?? 0 }) + (op.kill ? ' †' : '');
     case 'headline': return op.text;
   }
 }
