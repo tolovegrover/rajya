@@ -18,6 +18,7 @@ export function TitleScreen() {
     void load();
   }, [load]);
 
+  const live = useGame((g) => !!g.state && !g.state.ending);
   const cast = ['moni', 'amir', 'devraj', 'vikram', 'moomta', 'thikait'];
   const aiLabel = settings.provider === 'offline' ? t('ai.offline') : settings.provider === 'anthropic' ? 'CLAUDE' : settings.provider === 'gemini' ? 'GEMINI' : t('ai.compat');
 
@@ -49,7 +50,8 @@ export function TitleScreen() {
         <Text style={s.blurb}>{t('title.blurb')}</Text>
 
         <View style={{ alignSelf: 'stretch', gap: 12 }}>
-          <FancyButton label={`${t('title.new')}  ▸`} onPress={() => setScreen('disclaimer')} />
+          {live && <FancyButton label={`${t('title.resume')}  ▸`} onPress={() => setScreen('game')} />}
+          <FancyButton label={`${t('title.new')}  ▸`} variant={live ? 'gold' : undefined} onPress={() => setScreen('disclaimer')} />
           <FancyButton label={`${t('title.ai')} · ${aiLabel}`} variant="gold" small onPress={() => setScreen('settings')} />
           <FancyButton label={t('title.codex')} variant="ghost" small onPress={() => setScreen('codex')} />
           <FancyButton label={`📜 ${t('title.chronicle')}`} variant="ghost" small onPress={() => setScreen('chronicle')} />

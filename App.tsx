@@ -1,5 +1,5 @@
 import React from 'react';
-import { StatusBar, View, ActivityIndicator, Text, Platform } from 'react-native';
+import { StatusBar, View, ActivityIndicator, Text, Platform, BackHandler, Alert } from 'react-native';
 import { useFonts } from 'expo-font';
 import * as Font from 'expo-font';
 import { Cinzel_700Bold, Cinzel_900Black } from '@expo-google-fonts/cinzel';
@@ -15,6 +15,8 @@ import { CodexScreen } from './src/screens/CodexScreen';
 import { ChronicleScreen } from './src/screens/ChronicleScreen';
 import { EndingScreen } from './src/screens/EndingScreen';
 import { F, GOLD } from './src/theme';
+import { t } from './src/i18n';
+import { backTarget } from './src/nav';
 
 const WEB_FONTS = {
   Cinzel_700Bold: '/fonts/Cinzel_700Bold.ttf',
@@ -23,6 +25,35 @@ const WEB_FONTS = {
   CinzelDecorative_900Black: '/fonts/CinzelDecorative_900Black.ttf',
   YatraOne_400Regular: '/fonts/YatraOne_400Regular.ttf',
 };
+
+/**
+ * Android back walks the app backwards instead of dropping the player out of it:
+ * cards and selections close first, sub-screens return to whatever they were opened
+ * from, and only the title screen asks about quitting.
+ */
+function useBackButton() {
+  React.useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const onBack = (): boolean => {
+      const g = useGame.getState();
+      const live = !!g.state && !g.state.ending;
+      if (g.screen === 'game') {
+        if (g.state?.pendingDilemma) return true;   // a dilemma must be answered, not dodged
+        if (g.beat) { g.dismissBeat(); return true; }
+        if (g.selectedRegion) { g.selectRegion(null); return true; }
+      }
+      const to = backTarget(g.screen, live);
+      if (to !== 'quit') { g.setScreen(to); return true; }
+      Alert.alert(t('quit.title'), t('quit.msg'), [
+        { text: t('quit.stay'), style: 'cancel' },
+        { text: t('quit.leave'), style: 'destructive', onPress: () => BackHandler.exitApp() },
+      ]);
+      return true;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
+    return () => sub.remove();
+  }, []);
+}
 
 function Screens() {
   const screen = useGame((g) => g.screen);
@@ -40,6 +71,7 @@ function Screens() {
 
 export default function App() {
   const load = useSettings((s) => s.load);
+  useBackButton();
   const [nativeFonts, nativeError] = useFonts({
     Cinzel_700Bold,
     Cinzel_900Black,

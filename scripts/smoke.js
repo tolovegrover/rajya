@@ -3,6 +3,7 @@ const { applyOps } = require('./engine/reducer');
 const { tick } = require('./engine/tick');
 const { resolveAction, resolveFreeMove, FREE_MOVE_COST, ACTIONS, hottestRegion, phaseOf, etaFor } = require('./engine/resolver');
 const { scoreOf } = require('./engine/score');
+const { backTarget } = require('./nav');
 const { fallbackBeat } = require('./llm/fallback');
 const { extractJson } = require('./llm/gameMaster');
 const { detectRefusal } = require('./llm/refusalRescue');
@@ -147,5 +148,12 @@ check(`world: no two campaigns open identically (${fingerprints.size}/8 distinct
 const hottest0 = openings2.map((g) => Object.values(g.regions).sort((a, b) => b.unrest - a.unrest)[0].id);
 check(`world: the flashpoints move between campaigns (${new Set(hottest0).size} different hot spots)`, new Set(hottest0).size > 1);
 check('world: nobody opens already burning', openings2.every((g) => Object.values(g.regions).every((r) => r.unrest <= 80)));
+
+
+// --- back button walks the app, never out of it ---
+check('back: sub-screens return to a live campaign', ['settings','codex','chronicle'].every((s) => backTarget(s, true) === 'game'));
+check('back: sub-screens return to the title with no campaign', ['settings','codex','chronicle'].every((s) => backTarget(s, false) === 'title'));
+check('back: game and pre-game screens reach the title', ['game','setup','disclaimer','ending'].every((s) => backTarget(s, true) === 'title'));
+check('back: only the title asks about quitting', backTarget('title', true) === 'quit' && backTarget('title', false) === 'quit');
 
 process.exit(failures ? 1 : 0);
