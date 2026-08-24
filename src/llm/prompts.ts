@@ -62,8 +62,16 @@ export function mergedCast(settings: LLMSettings): Character[] {
   return [...CHARACTERS, ...settings.customCharacters];
 }
 
+/** Display name: the player's rename wins, otherwise the translated name, else the base name. */
+export function displayName(settings: LLMSettings, c: Character): string {
+  return settings.nameOverrides[c.id]?.trim() || t(`char.${c.id}.name`, {}, c.name);
+}
+
 export function personaFor(settings: LLMSettings, c: Character): string {
-  return settings.personaOverrides[c.id] ?? t(`char.${c.id}.persona`, {}, c.persona);
+  const base = settings.personaOverrides[c.id] ?? t(`char.${c.id}.persona`, {}, c.persona);
+  const renamed = settings.nameOverrides[c.id]?.trim();
+  if (renamed && renamed !== c.name) return `You are ${renamed} (the character previously named ${c.name}). ${base.replace(/^You are [^.]+\.\s*/i, '')}`;
+  return base;
 }
 
 /** Language the Game Master narrates in: the player's free-text override, else the UI language. */

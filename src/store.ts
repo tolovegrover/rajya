@@ -29,6 +29,7 @@ export const DEFAULT_SETTINGS: LLMSettings = {
   language: '',
   gmDirective: '',
   personaOverrides: {},
+  nameOverrides: {},
   customCharacters: [],
   rescue: true,
 };
@@ -39,6 +40,7 @@ interface SettingsStore {
   load: () => Promise<void>;
   setSettings: (patch: Partial<LLMSettings>) => void;
   setPersona: (id: string, text: string) => void;
+  setName: (id: string, name: string) => void;
   addCharacter: (c: Character) => void;
   removeCharacter: (id: string) => void;
 }
@@ -74,6 +76,12 @@ export const useSettings = create<SettingsStore>((set, get) => ({
   addCharacter(c) {
     const customCharacters = [...get().settings.customCharacters.filter((x) => x.id !== c.id), c];
     const settings = { ...get().settings, customCharacters };
+    set({ settings });
+    AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)).catch(() => undefined);
+  },
+  setName(id, name) {
+    const nameOverrides = { ...get().settings.nameOverrides, [id]: name };
+    const settings = { ...get().settings, nameOverrides };
     set({ settings });
     AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)).catch(() => undefined);
   },
@@ -177,7 +185,7 @@ export const useGame = create<GameStore>((set, get) => ({
   },
 
   newGame(role, eta) {
-    const st = createGame(role, eta);
+    const st = createGame(role, eta, useSettings.getState().settings.customCharacters);
     set({
       state: st,
       screen: 'game',

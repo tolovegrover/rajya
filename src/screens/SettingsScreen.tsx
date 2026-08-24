@@ -7,6 +7,8 @@ import { CHARACTERS } from '../data/characters';
 import { LanguageBar } from '../components/LanguageBar';
 import { testConnection } from '../llm/adapters';
 import { SupportBlock } from '../components/SupportBlock';
+import { CharacterStudio } from '../components/CharacterStudio';
+import { displayName } from '../llm/prompts';
 import { t } from '../i18n';
 
 const COMPAT_PRESETS = [
@@ -33,9 +35,10 @@ const CLAUDE_MODELS = ['claude-sonnet-4-5', 'claude-opus-4-1', 'claude-haiku-4-5
 export function SettingsScreen() {
   const setScreen = useGame((g) => g.setScreen);
   const hasGame = !!useGame((g) => g.state && !g.state.ending);
-  const { settings, setSettings, setPersona } = useSettings();
+  const { settings, setSettings, setPersona, setName } = useSettings();
   const [expandedChar, setExpandedChar] = useState<string | null>(null);
   const [personaDraft, setPersonaDraft] = useState('');
+  const [nameDraft, setNameDraft] = useState('');
   const [probe, setProbe] = useState('');
   const rescueLog = useGame((g) => g.rescueLog);
   useLang();
@@ -167,19 +170,26 @@ export function SettingsScreen() {
 
         <Text style={s.h}>{t('set.personas')}</Text>
         <Text style={s.note}>{t('set.personanote')}</Text>
+        <Text style={s.note}>{t('char.renamenote')}</Text>
         {CHARACTERS.map((c) => {
           const isExp = expandedChar === c.id;
           const persona = settings.personaOverrides[c.id] ?? t(`char.${c.id}.persona`, {}, c.persona);
           return (
             <View key={c.id} style={s.charCard}>
-              <Pressable onPress={() => { setExpandedChar(isExp ? null : c.id); setPersonaDraft(persona); }}>
+              <Pressable onPress={() => { setExpandedChar(isExp ? null : c.id); setPersonaDraft(persona); setNameDraft(displayName(settings, c)); }}>
                 <Text style={s.charName}>
-                  {t(`char.${c.id}.name`, {}, c.name)} <Text style={s.charTitle}>· {t(`char.${c.id}.title`, {}, c.title)}</Text>
+                  {displayName(settings, c)} <Text style={s.charTitle}>· {t(`char.${c.id}.title`, {}, c.title)}</Text>
                 </Text>
                 {!isExp && <Text style={s.charPeek} numberOfLines={1}>{persona}</Text>}
               </Pressable>
               {isExp && (
                 <>
+                  <View style={[s.row, { marginTop: 8 }]}>
+                    <TextInput value={nameDraft} onChangeText={setNameDraft} style={input({ flex: 1 })} placeholder={t('char.newname')} placeholderTextColor="#5f6f88" />
+                    <Pressable style={s.saveBtn} onPress={() => { if (nameDraft.trim()) setName(c.id, nameDraft.trim()); }}>
+                      <Text style={s.saveText}>{t('char.savechar')}</Text>
+                    </Pressable>
+                  </View>
                   <TextInput value={personaDraft} onChangeText={setPersonaDraft} multiline style={input({ minHeight: 110, textAlignVertical: 'top', marginTop: 8 })} />
                   <View style={[s.row, { marginTop: 8 }]}>
                     <Pressable style={s.saveBtn} onPress={() => { setPersona(c.id, personaDraft.trim() || persona); setExpandedChar(null); }}>
@@ -196,6 +206,8 @@ export function SettingsScreen() {
             </View>
           );
         })}
+
+        <CharacterStudio />
 
         {rescueLog.length > 0 && (
           <>

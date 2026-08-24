@@ -4,8 +4,6 @@ import { mainClient, flashClient, LLMClient, LLMRequest } from './adapters';
 import { runWithRescue } from './refusalRescue';
 import { fallbackBeat } from './fallback';
 import { etaFor } from '../engine/resolver';
-import { CHARACTERS } from '../data/characters';
-
 export interface GMContext {
   kind: 'action' | 'ambient' | 'riot' | 'royal' | 'election' | 'chaos';
   region: string;
@@ -19,9 +17,6 @@ const OP_KINDS = new Set([
   'factionPower', 'treasury', 'legitimacy', 'curfew', 'riot', 'protest',
   'armyMove', 'restoreroyal', 'election', 'character', 'headline',
 ]);
-
-const charIds = CHARACTERS.map((c) => c.id);
-const charNames = new Map(CHARACTERS.map((c) => [c.name.toLowerCase(), c.id]));
 
 export function extractJson(text: string): unknown {
   let t = text.trim();
@@ -63,14 +58,22 @@ function normalizeOps(raw: unknown): WorldOp[] {
     .slice(0, 5) as WorldOp[];
 }
 
-function normalizeDialogue(raw: unknown, s: GameState): DialogueLine[] {
+function normalizeDialogue(raw: unknown, s: GameState, settings: LLMSettings): DialogueLine[] {
   if (!Array.isArray(raw)) return [];
+  const cast = Object.values(s.characters);
+  const ids = cast.map((c) => c.id);
+  const names = new Map<string, string>();
+  for (const c of cast) {
+    names.set(c.name.toLowerCase(), c.id);
+    const renamed = settings.nameOverrides[c.id]?.trim();
+    if (renamed) names.set(renamed.toLowerCase(), c.id);
+  }
   const out: DialogueLine[] = [];
   for (const d of raw) {
     if (!d || typeof d !== 'object') continue;
     const rawId = String((d as Record<string, unknown>).char ?? '').trim().toLowerCase();
     const line = String((d as Record<string, unknown>).line ?? '').trim();
-    const id = charIds.includes(rawId) ? rawId : charNames.get(rawId) ?? charIds.find((c) => rawId.includes(c)) ?? null;
+    const id = ids.includes(rawId) ? rawId : names.get(rawId) ?? ids.find((c) => rawId.includes(c)) ?? null;
     if (id && line && s.characters[id]?.alive) out.push({ char: id, line: line.slice(0, 220) });
     if (out.length >= 2) break;
   }
@@ -151,7 +154,7 @@ export async function askGameMaster(
     return {
       beat,
       ticker,
-      dialogue: normalizeDialogue(parsed.dialogue, s),
+      dialogue: normalizeDialogue(parsed.dialogue, s, settings),
       ops: gmOps,
       dilemma: normalizeDilemma(parsed.dilemma),
       source: res.tier > 0 ? 'rescue' : 'llm',

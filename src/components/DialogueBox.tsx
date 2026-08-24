@@ -2,9 +2,13 @@ import React, { useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { CharacterPortrait } from './CharacterPortrait';
 import { DialogueLine, GameState } from '../types';
+import { useSettings } from '../store';
+import { displayName } from '../llm/prompts';
+import { t } from '../i18n';
 
 export function DialogueBox({ lines, state, onDismiss }: { lines: DialogueLine[]; state: GameState; onDismiss: () => void }) {
   const first = lines[0];
+  const settings = useSettings((s) => s.settings);
 
   useEffect(() => {
     const t = setTimeout(onDismiss, 7000);
@@ -18,7 +22,7 @@ export function DialogueBox({ lines, state, onDismiss }: { lines: DialogueLine[]
   return (
     <Pressable style={styles.wrap} onPress={onDismiss}>
       <View style={styles.bubble}>
-        <Text style={styles.name}>{c.name} · {c.title}</Text>
+        <Text style={styles.name}>{displayName(settings, c)} · {t(`char.${c.id}.title`, {}, c.title)}</Text>
         <Text style={styles.line}>"{first.line}"</Text>
       </View>
       <CharacterPortrait spec={c.avatar} size={64} />

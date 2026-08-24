@@ -208,6 +208,7 @@ export interface LLMSettings {
   language: string;
   gmDirective: string;
   personaOverrides: Record<string, string>;
+  nameOverrides: Record<string, string>;
   customCharacters: Character[];
   rescue: boolean;
 }

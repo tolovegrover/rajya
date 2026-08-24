@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { useGame, useLang } from '../store';
+import { useGame, useLang, useSettings } from '../store';
 import { t } from '../i18n';
 import { CHARACTERS } from '../data/characters';
 import { FACTIONS, PLAYER_ROLES } from '../data/factions';
 import { CharacterPortrait } from '../components/CharacterPortrait';
+import { displayName } from '../llm/prompts';
 
 type Tab = 'cast' | 'factions' | 'manual' | 'log';
 
 export function CodexScreen() {
   const setScreen = useGame((g) => g.setScreen);
+  const settings = useSettings((s) => s.settings);
   const state = useGame((g) => g.state);
   const rescueLog = useGame((g) => g.rescueLog);
   const [tab, setTab] = useState<Tab>('cast');
@@ -27,14 +29,14 @@ export function CodexScreen() {
       </View>
       <ScrollView contentContainerStyle={{ padding: 14, gap: 10, paddingBottom: 40 }}>
         {tab === 'cast' &&
-          CHARACTERS.map((c) => (
+          [...CHARACTERS, ...settings.customCharacters].map((c) => (
             <View key={c.id} style={s.card}>
               <View style={s.castRow}>
                 <CharacterPortrait spec={c.avatar} size={56} />
                 <View style={{ flex: 1 }}>
-                  <Text style={s.name}>{t(`char.${c.id}.name`, {}, c.name)}</Text>
+                  <Text style={s.name}>{displayName(settings, c)}</Text>
                   <Text style={s.title}>{t(`char.${c.id}.title`, {}, c.title)}</Text>
-                  <Text style={s.persona} numberOfLines={4}>{t(`char.${c.id}.persona`, {}, c.persona)}</Text>
+                  <Text style={s.persona} numberOfLines={4}>{settings.personaOverrides[c.id] ?? t(`char.${c.id}.persona`, {}, c.persona)}</Text>
                 </View>
               </View>
             </View>
