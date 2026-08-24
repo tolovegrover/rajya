@@ -21,3 +21,4 @@ service-account*.json
 *-firebase-adminsdk-*.json
 .env*
 dist/
+.vercel/
