@@ -19,10 +19,7 @@ export function GameScreen() {
   const [move, setMove] = useState('');
   useLang();
 
-  useEffect(() => {
-    const iv = setInterval(() => runTick(), 6000);
-    return () => clearInterval(iv);
-  }, [runTick]);
+  // No timer: a week passes only when the player acts, writes a move, or waits.
 
   useEffect(() => {
     setPaused(!!beat || thinking || pendingBeats.length > 0);
@@ -103,6 +100,14 @@ export function GameScreen() {
             <Text style={s.moveCost}>◎4</Text>
           </Pressable>
         </View>
+        <Pressable
+          style={[s.weekBtn, (thinking || !!beat) && s.actionDisabled]}
+          disabled={thinking || !!beat || !!state.ending}
+          onPress={() => runTick()}
+        >
+          <Text style={s.weekBtnText}>⏭  {t('week.end')}</Text>
+          <Text style={s.weekHint}>{t('week.hint')}</Text>
+        </Pressable>
         <ScrollView horizontal contentContainerStyle={{ gap: 8, paddingHorizontal: 8 }} showsHorizontalScrollIndicator={false}>
           {actions.map((a) => (
             <Pressable
@@ -155,18 +160,24 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#101625ee',
     paddingHorizontal: 10, paddingVertical: 6, borderTopWidth: 1, borderTopColor: '#26324a',
   },
-  infoName: { color: '#eef1f8', fontSize: 12, fontWeight: '900' },
-  infoStats: { color: '#7f8ea3', fontSize: 9, marginTop: 2 },
+  infoName: { color: '#eef1f8', fontSize: 15, fontWeight: '900' },
+  infoStats: { color: '#9fb0c9', fontSize: 12, marginTop: 3, lineHeight: 16 },
   targetBtn: { borderColor: '#e6b422', borderWidth: 1, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 6 },
-  targetBtnText: { color: '#e6b422', fontSize: 9, fontWeight: '900' },
+  targetBtnText: { color: '#e6b422', fontSize: 12, fontWeight: '900' },
   targetOn: { backgroundColor: '#e6b422', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 6 },
-  targetOnText: { color: '#0b0f1a', fontSize: 9, fontWeight: '900' },
-  closeInfo: { color: '#5f6f88', fontSize: 14, paddingHorizontal: 4 },
+  targetOnText: { color: '#0b0f1a', fontSize: 12, fontWeight: '900' },
+  closeInfo: { color: '#8b98ae', fontSize: 22, paddingHorizontal: 12, paddingVertical: 6 },
   actions: { backgroundColor: '#0d1322', borderTopWidth: 1, borderTopColor: '#26324a', paddingVertical: 6 },
   actionBtn: {
-    width: 92, alignItems: 'center', paddingVertical: 8, borderRadius: 10, backgroundColor: '#141b2b', borderColor: '#2a3650', borderWidth: 1, gap: 2,
+    width: 118, minHeight: 92, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, paddingHorizontal: 6, borderRadius: 14, backgroundColor: '#141b2b', borderColor: '#2a3650', borderWidth: 1, gap: 4,
   },
   actionDisabled: { opacity: 0.4 },
+  weekBtn: {
+    marginHorizontal: 8, marginBottom: 8, paddingVertical: 12, borderRadius: 14, alignItems: 'center',
+    backgroundColor: 'rgba(230,180,34,0.13)', borderColor: '#e6b42288', borderWidth: 1,
+  },
+  weekBtnText: { color: '#e6b422', fontSize: 14, fontWeight: '900', letterSpacing: 1 },
+  weekHint: { color: '#9fb0c9', fontSize: 11, marginTop: 2 },
   moveRow: { flexDirection: 'row', gap: 6, paddingHorizontal: 8, paddingBottom: 6, alignItems: 'flex-end' },
   moveInput: {
     flex: 1, color: '#eef1f8', backgroundColor: '#0d1322', borderColor: '#2a3650', borderWidth: 1,
@@ -175,11 +186,11 @@ const s = StyleSheet.create({
   moveBtn: { backgroundColor: '#c23', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9, alignItems: 'center' },
   moveBtnText: { color: '#fff', fontWeight: '900', fontSize: 11, letterSpacing: 1 },
   moveCost: { color: '#ffd9d9', fontSize: 9, marginTop: 1 },
-  actionIcon: { fontSize: 16 },
-  actionLabel: { color: '#eef1f8', fontSize: 9, fontWeight: '800', textAlign: 'center' },
-  actionCost: { color: '#7f8ea3', fontSize: 9 },
+  actionIcon: { fontSize: 24 },
+  actionLabel: { color: '#eef1f8', fontSize: 12, fontWeight: '800', textAlign: 'center', lineHeight: 15 },
+  actionCost: { color: '#9fb0c9', fontSize: 11, fontWeight: '700' },
   footRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 10, paddingTop: 6 },
-  footBtn: { color: '#4d8fd1', fontSize: 10, fontWeight: '800' },
+  footBtn: { color: '#5aa2e8', fontSize: 13, fontWeight: '800', paddingVertical: 8, paddingHorizontal: 4 },
   target: { flex: 1, textAlign: 'right', color: '#e6b422', fontSize: 10, fontWeight: '800' },
   rescue: { color: '#c93fd1', fontSize: 10, fontWeight: '800' },
 });

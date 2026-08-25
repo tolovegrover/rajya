@@ -125,7 +125,7 @@ interface GameStore {
   dismissAmbient: () => void;
   popDialogue: () => void;
   newGame: (role: GameState['role'], eta: number) => void;
-  runTick: () => void;
+  runTick: (silent?: boolean) => void;
   doAction: (actionId: string) => Promise<void>;
   doFreeMove: (text: string) => Promise<void>;
   requestEnding: () => Promise<void>;
@@ -244,7 +244,7 @@ export const useGame = create<GameStore>((set, get) => ({
     set({ state: next, fx: [...get().fx, ...fxFromOps(applied, next.turn)].slice(-24) });
   },
 
-  runTick() {
+  runTick(silent = false) {
     const { state, paused, thinking, beat, pendingBeats } = get();
     if (!state || state.ending || paused || thinking || beat || pendingBeats.length > 0) return;
     const { state: next, ops } = tick(state);
@@ -286,7 +286,7 @@ export const useGame = create<GameStore>((set, get) => ({
       return;
     }
     get().persist();
-    const wantsBeat = royalOp || riotOp || next.turn % 4 === 0;
+    const wantsBeat = !silent && (royalOp || riotOp || next.turn % 4 === 0);
     if (wantsBeat) {
       const kind: GMContext['kind'] = royalOp ? 'royal' : riotOp ? 'riot' : 'ambient';
       const region = royalOp ? (royalOp as { region: string }).region : riotOp ? (riotOp as { region: string }).region : hottest(s2);
@@ -304,10 +304,13 @@ export const useGame = create<GameStore>((set, get) => ({
     const applied = applyOps(s, outcome.ops);
     s = applied.state;
     const newFx = fxFromOps(applied.applied, s.turn);
+    set({ state: s, fx: [...get().fx, ...newFx].slice(-24) });
+    get().runTick(true);                 // your move is what moves the week
+    const after = get().state;
+    if (!after || after.ending) return;
     set({
-      state: s,
+      state: after,
       thinking: true,
-      fx: [...get().fx, ...newFx].slice(-24),
       ticker: hasAI(useSettings.getState().settings)
         ? get().ticker
         : [outcome.headline.toUpperCase().slice(0, 90), ...get().ticker].slice(0, 12),
@@ -325,10 +328,13 @@ export const useGame = create<GameStore>((set, get) => ({
     let s = { ...state, influence: Math.max(0, state.influence - FREE_MOVE_COST) };
     const applied = applyOps(s, outcome.ops);
     s = applied.state;
+    set({ state: s, fx: [...get().fx, ...fxFromOps(applied.applied, s.turn)].slice(-24) });
+    get().runTick(true);
+    const after = get().state;
+    if (!after || after.ending) return;
     set({
-      state: s,
+      state: after,
       thinking: true,
-      fx: [...get().fx, ...fxFromOps(applied.applied, s.turn)].slice(-24),
       ticker: hasAI(useSettings.getState().settings)
         ? get().ticker
         : [outcome.headline.toUpperCase().slice(0, 90), ...get().ticker].slice(0, 12),

@@ -3,6 +3,8 @@ import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator } from
 import { useGame, useLang } from '../store';
 import { t } from '../i18n';
 import { scoreOf } from '../engine/score';
+import { hasAI } from '../llm/adapters';
+import { useSettings } from '../store';
 import { PLAYER_ROLES } from '../data/factions';
 
 export function EndingScreen() {
@@ -11,6 +13,7 @@ export function EndingScreen() {
   const newGame = useGame((g) => g.newGame);
   useLang();
   const thinking = useGame((g) => g.thinking);
+  const scored = hasAI(useSettings((st) => st.settings));
   if (!state || !state.ending) return null;
   const role = PLAYER_ROLES.find((r) => r.id === state.role);
 
@@ -21,7 +24,7 @@ export function EndingScreen() {
       <Text style={s.text}>{state.ending.text}</Text>
       {thinking && <ActivityIndicator color="#e6b422" />}
       <View style={s.statsCard}>
-        <Text style={s.stat}>{t('stat.score')}: {scoreOf(state)} / 1000</Text>
+        <Text style={s.stat}>{t('stat.score')}: {scored ? `${scoreOf(state)} / 1000` : t('score.needai')}</Text>
         <Text style={s.stat}>{t('endscr.weeks')}: {state.turn}</Text>
         <Text style={s.stat}>{t('stat.legitimacy')}: {Math.round(state.legitimacy)} · {t('stat.stability')}: {Math.round(state.stability)}</Text>
         <Text style={s.stat}>{t('endscr.royalpop')}: {state.royalPopPct}%</Text>

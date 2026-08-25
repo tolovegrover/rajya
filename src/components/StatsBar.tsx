@@ -6,6 +6,8 @@ import { PLAYER_ROLES } from '../data/factions';
 import { t } from '../i18n';
 import { phaseOf } from '../engine/resolver';
 import { scoreOf } from '../engine/score';
+import { hasAI } from '../llm/adapters';
+import { useSettings } from '../store';
 import { useLang } from '../store';
 import { F, GOLD } from '../theme';
 
@@ -13,6 +15,7 @@ export function StatsBar({ state }: { state: GameState }) {
   const role = PLAYER_ROLES.find((r) => r.id === state.role);
   useLang();
   const phase = phaseOf(state.turn);
+  const scored = hasAI(useSettings((st) => st.settings));
   const cell = (label: string, value: string, color: string) => (
     <View style={styles.cell}>
       <Text style={styles.label}>{label}</Text>
@@ -26,7 +29,7 @@ export function StatsBar({ state }: { state: GameState }) {
       {phase >= 1 && cell(t('stat.legitimacy'), `${Math.round(state.legitimacy)}`, state.legitimacy > 50 ? '#5aa2e8' : '#e8875a')}
       {phase >= 1 && cell(t('stat.stability'), `${Math.round(state.stability)}`, state.stability > 50 ? '#5aa2e8' : '#e8875a')}
       {cell(t('stat.influence'), `${Math.round(state.influence)}`, '#d78ae8')}
-      {phase >= 1 && cell(t('stat.score'), `${scoreOf(state)}`, GOLD)}
+      {phase >= 1 && cell(t('stat.score'), scored ? `${scoreOf(state)}` : '—', scored ? GOLD : '#6b7789')}
       {phase >= 2 && cell('η', state.eta.toFixed(2), '#9aa4b8')}
       <View style={styles.role}>
         <Text style={styles.roleText} numberOfLines={2}>{t(`role.${state.role}.name`, {}, role?.name ?? '')}</Text>
