@@ -1,7 +1,7 @@
-import { GameState, WorldOp, BeatResult, DialogueLine } from '../types';
+import { GameState, WorldOp, BeatResult, DialogueLine, Dilemma } from '../types';
 import { pick } from '../engine/util';
 import { t, tList } from '../i18n';
-import { PROTEST_BEATS, RIOT_BEATS, ROYAL_BEATS, ECONOMY_BEATS, SCANDAL_BEATS, CHAOS_BEATS, AMBIENT_LINES, BeatTemplate } from '../data/events';
+import { PROTEST_BEATS, RIOT_BEATS, ROYAL_BEATS, ECONOMY_BEATS, SCANDAL_BEATS, CHAOS_BEATS, AMBIENT_LINES, BeatTemplate, PROCEDURAL_DILEMMAS } from '../data/events';
 
 export function fallbackDialogue(s: GameState, ids: string[]): DialogueLine[] {
   return ids
@@ -78,11 +78,29 @@ export function fallbackBeat(
     }
   }
 
+  const dilemma: Dilemma | undefined =
+    ctx.kind === 'action' && s.turn % 3 === 1 && PROCEDURAL_DILEMMAS.length
+      ? (() => {
+          const i = Math.floor(Math.random() * PROCEDURAL_DILEMMAS.length) + 1;
+          const d = PROCEDURAL_DILEMMAS[i - 1];
+          return {
+            text: t(`dlm.${i}.text`, {}, d.text),
+            options: d.options.map((o, oi) => ({
+              label: t(`dlm.${i}.o${oi + 1}`, {}, o.label),
+              ops: (o.ops as WorldOp[]).map((op) =>
+                'region' in op && op.region === '{region}' ? { ...op, region: ctx.region } : op
+              ),
+            })),
+          };
+        })()
+      : undefined;
+
   return {
     beat: fill(t(`ev.${tpl.key}.b`, {}, tpl.template), s, ctx.region),
     ticker: tList(`ev.${tpl.key}.k`, vars(s, ctx.region), tpl.ticker).map((x) => fill(x, s, ctx.region)),
     dialogue: fallbackDialogue(s, onStage),
     ops: [],
+    dilemma,
     source: 'fallback',
   };
 }

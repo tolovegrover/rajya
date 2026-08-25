@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
 import { useGame, useLang } from '../store';
 import { t } from '../i18n';
@@ -8,18 +8,18 @@ import { NewsTicker } from '../components/NewsTicker';
 import { DialogueBox } from '../components/DialogueBox';
 import { EventCard } from '../components/EventCard';
 import { ACTIONS, phaseOf } from '../engine/resolver';
+import { botPlan, botPickDilemma } from '../engine/bot';
 
 export function GameScreen() {
   const {
-    state, fx, ticker, thinking, beat, pendingBeats, dialogueQueue, lastAmbient, selectedRegion, targetRegion,
-    runTick, doAction, dismissBeat, dismissAmbient, chooseDilemma, popDialogue, selectRegion, setTarget, setPaused, setScreen,
+    state, fx, ticker, thinking, beat, pendingBeats, dialogueQueue, lastAmbient, selectedRegion, targetRegion, autoplay,
+    runTick, doAction, dismissBeat, dismissAmbient, chooseDilemma, popDialogue, selectRegion, setTarget, setPaused, setScreen, setAutoplay,
     rescueLog,
   } = useGame();
   const doFreeMove = useGame((g) => g.doFreeMove);
   const [move, setMove] = useState('');
+  const tickNext = useRef(false);
   useLang();
-
-  // No timer: a week passes only when the player acts, writes a move, or waits.
 
   useEffect(() => {
     setPaused(!!beat || thinking || pendingBeats.length > 0);
@@ -30,6 +30,30 @@ export function GameScreen() {
     const t = setTimeout(() => dismissAmbient(), 8000);
     return () => clearTimeout(t);
   }, [lastAmbient, dismissAmbient]);
+
+  useEffect(() => {
+    if (!autoplay || !state || state.ending) return;
+    if (beat) {
+      const t = setTimeout(() => {
+        if (state.pendingDilemma) chooseDilemma(botPickDilemma(state, state.pendingDilemma));
+        dismissBeat();
+      }, 2600);
+      return () => clearTimeout(t);
+    }
+    if (thinking) return;
+    const plan = botPlan(state);
+    const t = setTimeout(() => {
+      if (tickNext.current) {
+        tickNext.current = false;
+        runTick();
+      } else {
+        tickNext.current = true;
+        setTarget(plan.target);
+        void doAction(plan.actionId);
+      }
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [autoplay, state, beat, thinking, chooseDilemma, dismissBeat, doAction, runTick, setTarget]);
 
   if (!state) return null;
   const sel = selectedRegion ? state.regions[selectedRegion] : null;
@@ -126,6 +150,9 @@ export function GameScreen() {
           <Pressable onPress={() => setScreen('codex')}><Text style={s.footBtn}>{t('game.codex')}</Text></Pressable>
           <Pressable onPress={() => setScreen('chronicle')}><Text style={s.footBtn}>📜 {t('game.chronicle')}</Text></Pressable>
           <Pressable onPress={() => setScreen('settings')}><Text style={s.footBtn}>{t('title.ai')}</Text></Pressable>
+          <Pressable onPress={() => setAutoplay(!autoplay)}>
+            <Text style={[s.autoplayBtn, autoplay && s.autoplayOn]}>{autoplay ? t('game.autoplayon') : t('game.autoplay')}</Text>
+          </Pressable>
           {pendingBeats.length > 0 && <Text style={s.pending}>📜 +{pendingBeats.length}</Text>}
           <Text style={s.target}>{t('game.target')}: {t(`rg.${targetRegion}`, {}, state.regions[targetRegion]?.name ?? '—')}</Text>
           {rescueLog.length > 0 && <Text style={s.rescue}>🛟 {rescueLog.length}</Text>}
@@ -191,6 +218,8 @@ const s = StyleSheet.create({
   actionCost: { color: '#9fb0c9', fontSize: 11, fontWeight: '700' },
   footRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 10, paddingTop: 6 },
   footBtn: { color: '#5aa2e8', fontSize: 13, fontWeight: '800', paddingVertical: 8, paddingHorizontal: 4 },
+  autoplayBtn: { color: '#d78ae8', fontSize: 12, fontWeight: '900', paddingVertical: 8, paddingHorizontal: 4 },
+  autoplayOn: { color: '#8fd06a', textDecorationLine: 'underline' },
   target: { flex: 1, textAlign: 'right', color: '#e6b422', fontSize: 10, fontWeight: '800' },
   rescue: { color: '#c93fd1', fontSize: 10, fontWeight: '800' },
 });

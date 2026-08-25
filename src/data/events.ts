@@ -1,5 +1,120 @@
 import { Movement } from '../types';
 
+export interface ProceduralDilemma {
+  text: string;
+  options: { label: string; ops: { op: string; [k: string]: unknown }[] }[];
+}
+
+export const PROCEDURAL_DILEMMAS: ProceduralDilemma[] = [
+  {
+    text: 'The constitutional court invites public comment on the quota framework. Whose side does your camp file?',
+    options: [
+      {
+        label: 'Back the merit ceiling',
+        ops: [
+          { op: 'reservationHeat', region: '{region}', delta: -15 },
+          { op: 'factionPower', faction: 'swarna', delta: 5 },
+          { op: 'factionPower', faction: 'bahujan', delta: -5 },
+          { op: 'legitimacy', delta: -4 },
+        ],
+      },
+      {
+        label: 'Defend the ladder of justice',
+        ops: [
+          { op: 'factionPower', faction: 'bahujan', delta: 6 },
+          { op: 'factionPower', faction: 'swarna', delta: -4 },
+          { op: 'reservationHeat', region: '{region}', delta: 10 },
+          { op: 'legitimacy', delta: 4 },
+        ],
+      },
+    ],
+  },
+  {
+    text: 'A mega-corridor will swallow 40,000 acres. The Kisan Mazdoor Sabha is at your door with tractors.',
+    options: [
+      {
+        label: 'Roll out the bulldozers',
+        ops: [
+          { op: 'landHeat', region: '{region}', delta: 15 },
+          { op: 'unrest', region: '{region}', delta: 10 },
+          { op: 'treasury', delta: 12 },
+          { op: 'legitimacy', delta: -5 },
+        ],
+      },
+      {
+        label: 'Cancel the corridor',
+        ops: [
+          { op: 'landHeat', region: '{region}', delta: -15 },
+          { op: 'factionPower', faction: 'kisan', delta: 8 },
+          { op: 'unrest', region: '{region}', delta: -6 },
+          { op: 'treasury', delta: -8 },
+        ],
+      },
+    ],
+  },
+  {
+    text: 'The Studio airs a sting against your camp, recreated with "sources". The nation wants to know.',
+    options: [
+      {
+        label: 'Sue them into silence',
+        ops: [
+          { op: 'factionPower', faction: 'media', delta: -6 },
+          { op: 'legitimacy', delta: -3 },
+          { op: 'treasury', delta: -5 },
+        ],
+      },
+      {
+        label: 'Buy prime time instead',
+        ops: [
+          { op: 'factionPower', faction: 'media', delta: 6 },
+          { op: 'treasury', delta: -10 },
+          { op: 'legitimacy', delta: 3 },
+        ],
+      },
+    ],
+  },
+  {
+    text: 'Maharaja Vikramaditya IV offers to shelter your marchers in his palace grounds.',
+    options: [
+      {
+        label: 'Accept the crown\'s shelter',
+        ops: [
+          { op: 'royalist', region: '{region}', delta: 12 },
+          { op: 'factionPower', faction: 'rajwada', delta: 8 },
+          { op: 'legitimacy', delta: -4 },
+        ],
+      },
+      {
+        label: 'Refuse the royals',
+        ops: [
+          { op: 'royalist', region: '{region}', delta: -10 },
+          { op: 'legitimacy', delta: 4 },
+        ],
+      },
+    ],
+  },
+  {
+    text: 'Gen. Rudra Pratap offers joint patrolling in the burning districts. The Cabinet is watching.',
+    options: [
+      {
+        label: 'March with the troops',
+        ops: [
+          { op: 'unrest', region: '{region}', delta: -14 },
+          { op: 'separatist', region: '{region}', delta: 6 },
+          { op: 'legitimacy', delta: -3 },
+        ],
+      },
+      {
+        label: 'Decline the soldiers',
+        ops: [
+          { op: 'unrest', region: '{region}', delta: -4 },
+          { op: 'legitimacy', delta: 4 },
+        ],
+      },
+    ],
+  },
+];
+
 export interface BeatTemplate {
   key: string;
   movements?: Movement[];

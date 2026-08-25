@@ -80,6 +80,16 @@ export function tick(s: GameState): { state: GameState; ops: WorldOp[] } {
   if (n.stability < 45) n.legitimacy = clamp(n.legitimacy - 2, 0, 100);
   else if (n.stability > 75) n.legitimacy = clamp(n.legitimacy + 1, 0, 100);
   if (n.factions.rajwada.power > 50) n.legitimacy = clamp(n.legitimacy - 1, 0, 100);
+  n.legitimacy = clamp(n.legitimacy + (n.stability - n.legitimacy) / 40, 0, 100);
+
+  // street factions cool toward their base unless somebody keeps stoking them
+  const streetBases: [FactionId, number][] = [
+    ['swarna', 18], ['bahujan', 24], ['kisan', 20], ['media', 30],
+  ];
+  for (const [id, base] of streetBases) {
+    const f = n.factions[id];
+    f.power = clamp(f.power + Math.sign(base - f.power) * Math.min(1.2, Math.abs(base - f.power)), 0, 100);
+  }
 
   if (n.turn >= n.nextElectionTurn) {
     n.nextElectionTurn = n.turn + 16;
@@ -113,7 +123,7 @@ export function tick(s: GameState): { state: GameState; ops: WorldOp[] } {
 export function checkEnding(n: GameState): GameState['ending'] {
   if (n.ending) return n.ending;
   const kingmaker = n.role === 'oligarch' && n.influence >= 70;
-  if (n.legitimacy <= 0) {
+  if ((n.legitimacy <= 0 || (n.factions.rajwada.power >= 60 && n.legitimacy < 30)) && n.turn >= 35) {
     if (n.factions.rajwada.power >= 60) {
       return {
         id: 'iron_crown',
@@ -134,7 +144,7 @@ export function checkEnding(n: GameState): GameState['ending'] {
       text: t(`end.age_of_rajyas.${n.role === 'royalist' ? 'royalist' : kingmaker ? 'kingmaker' : 'other'}`),
     };
   }
-  if (n.factions.swarna.power >= 76 && n.factions.bahujan.power <= 20) {
+  if (n.turn >= 40 && n.factions.swarna.power >= 76 && n.factions.bahujan.power <= 20) {
     return {
       id: 'quota_repealed',
       title: t('end.quota_repealed.title'),

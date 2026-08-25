@@ -113,6 +113,7 @@ interface GameStore {
   rescueLog: RescueLogEntry[];
   selectedRegion: string | null;
   paused: boolean;
+  autoplay: boolean;
   targetRegion: string;
   log: (entry: RescueLogEntry) => void;
   setScreen: (s: Screen) => void;
@@ -121,6 +122,7 @@ interface GameStore {
   setTarget: (r: string) => void;
   selectRegion: (r: string | null) => void;
   setPaused: (p: boolean) => void;
+  setAutoplay: (on: boolean) => void;
   dismissBeat: () => void;
   dismissAmbient: () => void;
   popDialogue: () => void;
@@ -176,6 +178,7 @@ export const useGame = create<GameStore>((set, get) => ({
   rescueLog: [],
   selectedRegion: null,
   paused: false,
+  autoplay: false,
   targetRegion: 'uttardesh',
 
   log(entry) {
@@ -206,6 +209,9 @@ export const useGame = create<GameStore>((set, get) => ({
   },
   setPaused(p) {
     set({ paused: p });
+  },
+  setAutoplay(on) {
+    set({ autoplay: on });
   },
   dismissBeat() {
     const next = get().pendingBeats[0];

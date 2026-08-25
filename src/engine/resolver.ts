@@ -94,11 +94,11 @@ export function resolveAction(s: GameState, actionId: string, targetRegion: stri
   const H = (k: string, extra: Record<string, string | number> = {}) => t(`res.${k}.h`, { ...vars, ...extra });
   const K = (k: string, extra: Record<string, string | number> = {}) => t(`res.${k}.t`, { ...vars, ...extra });
 
-  const base = 0.55 + s.influence / 250 - rg.unrest / 300;
+  const base = 0.58 + s.influence / 300 - rg.unrest / 500;
   const odds = clamp(Math.round((base + noise(etaFor(s) * 0.25)) * 100), 5, 95);
   const roll = rand() * 100;
   const ok = roll <= odds;
-  const influenceDelta = ok ? (def.usesInfluence ? -4 : 2) : -6;
+  const influenceDelta = ok ? (def.usesInfluence ? -4 : 3) : -2;
   const treasuryDelta = ok ? -def.cost : -Math.ceil(def.cost / 2);
 
   let ops: WorldOp[] = [];
@@ -162,7 +162,7 @@ export function resolveAction(s: GameState, actionId: string, targetRegion: stri
       headline = H('blitz');
       break;
     case 'litigate':
-      ops = [{ op: 'legitimacy', delta: -4 }, { op: 'reservationHeat', region: rg.id, delta: -8 }, { op: 'factionPower', faction: 'swarna', delta: 6 }, { op: 'factionPower', faction: 'bahujan', delta: -6 }, { op: 'headline', text: K('litigate') }];
+      ops = [{ op: 'legitimacy', delta: -4 }, { op: 'reservationHeat', region: rg.id, delta: -8 }, { op: 'factionPower', faction: 'swarna', delta: 6 }, { op: 'factionPower', faction: 'bahujan', delta: -10 }, { op: 'headline', text: K('litigate') }];
       headline = H('litigate');
       break;
     case 'march':
@@ -170,19 +170,19 @@ export function resolveAction(s: GameState, actionId: string, targetRegion: stri
       headline = H('march');
       break;
     case 'court':
-      ops = [{ op: 'unrest', region: rg.id, delta: 4 }, ...spread(14, 'royalist'), { op: 'factionPower', faction: 'rajwada', delta: 8 }, { op: 'headline', text: K('court') }];
+      ops = [{ op: 'unrest', region: rg.id, delta: 4 }, ...spread(14, 'royalist'), { op: 'factionPower', faction: 'rajwada', delta: 10 }, { op: 'headline', text: K('court') }];
       headline = H('court');
       break;
     case 'heritage':
-      ops = [...spread(10, 'royalist'), ...spread(-4, 'loyalty'), { op: 'headline', text: K('heritage') }];
+      ops = [...spread(10, 'royalist'), ...spread(-4, 'loyalty'), { op: 'factionPower', faction: 'rajwada', delta: 6 }, { op: 'headline', text: K('heritage') }];
       headline = H('heritage');
       break;
     case 'buymla':
-      ops = [{ op: 'factionPower', faction: 'rajwada', delta: 10 }, { op: 'legitimacy', delta: -3 }, { op: 'royalist', region: rg.id, delta: 12 }, { op: 'unrest', region: rg.id, delta: -5 }, { op: 'headline', text: K('buymla') }];
+      ops = [{ op: 'factionPower', faction: 'rajwada', delta: 14 }, { op: 'legitimacy', delta: -3 }, { op: 'royalist', region: rg.id, delta: 12 }, { op: 'unrest', region: rg.id, delta: -5 }, { op: 'headline', text: K('buymla') }];
       headline = H('buymla');
       break;
     case 'rumor':
-      ops = [{ op: 'legitimacy', delta: -6 }, ...spread(8, 'royalist'), { op: 'headline', text: K('rumor') }];
+      ops = [{ op: 'legitimacy', delta: -6 }, ...spread(8, 'royalist'), { op: 'factionPower', faction: 'rajwada', delta: 2 }, { op: 'headline', text: K('rumor') }];
       headline = H('rumor');
       break;
     case 'fund': {
