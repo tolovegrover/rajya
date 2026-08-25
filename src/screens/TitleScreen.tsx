@@ -19,6 +19,7 @@ export function TitleScreen() {
   }, [load]);
 
   const live = useGame((g) => !!g.state && !g.state.ending);
+  const saved = useGame((g) => g.saved);
   const cast = ['moni', 'amir', 'devraj', 'vikram', 'moomta', 'thikait'];
   const aiLabel = settings.provider === 'offline' ? t('ai.offline') : settings.provider === 'anthropic' ? 'CLAUDE' : settings.provider === 'gemini' ? 'GEMINI' : t('ai.compat');
 
@@ -50,7 +51,12 @@ export function TitleScreen() {
         <Text style={s.blurb}>{t('title.blurb')}</Text>
 
         <View style={{ alignSelf: 'stretch', gap: 12 }}>
-          {live && <FancyButton label={`${t('title.resume')}  ▸`} onPress={() => setScreen('game')} />}
+          {live && (
+            <View style={{ gap: 4 }}>
+              <FancyButton label={`${t('title.resume')}  ▸`} onPress={() => setScreen('game')} />
+              {!!saved && <Text style={s.saveSub} numberOfLines={1}>{saved.name} · {saved.subtitle}</Text>}
+            </View>
+          )}
           <FancyButton label={`${t('title.new')}  ▸`} variant={live ? 'gold' : undefined} onPress={() => setScreen('disclaimer')} />
           <FancyButton label={`${t('title.ai')} · ${aiLabel}`} variant="gold" small onPress={() => setScreen('settings')} />
           <FancyButton label={t('title.codex')} variant="ghost" small onPress={() => setScreen('codex')} />
@@ -93,5 +99,6 @@ const s = StyleSheet.create({
   },
   cast: { flexDirection: 'row', gap: 8, marginVertical: 6 },
   blurb: { color: '#b7c3da', fontSize: 13, lineHeight: 20, textAlign: 'center', maxWidth: 360 },
+  saveSub: { color: '#aeb9cf', fontSize: 10, textAlign: 'center', opacity: 0.85 },
   foot: { color: '#5f6f88', fontSize: 10, marginTop: 4 },
 });

@@ -10,6 +10,7 @@ import { resolveAction, resolveFreeMove, FREE_MOVE_COST, ACTIONS, phaseOf } from
 import { tick } from './engine/tick';
 import { askGameMaster, GMContext } from './llm/gameMaster';
 import { hasAI } from './llm/adapters';
+import { saveGame, loadGame, clearGame, SaveMeta } from './save';
 import { fallbackBeat } from './llm/fallback';
 
 const SETTINGS_KEY = 'rajya_settings_v1';
@@ -102,6 +103,7 @@ interface GameStore {
   screen: Screen;
   beat: BeatResult | null;
   pendingBeats: BeatResult[];
+  saved: SaveMeta | null;
   dialogueQueue: DialogueLine[];
   lastAmbient: { headline: string; at: number } | null;
   lastChronicle: GameEvent[] | null;
@@ -114,6 +116,8 @@ interface GameStore {
   targetRegion: string;
   log: (entry: RescueLogEntry) => void;
   setScreen: (s: Screen) => void;
+  hydrate: () => Promise<void>;
+  persist: () => void;
   setTarget: (r: string) => void;
   selectRegion: (r: string | null) => void;
   setPaused: (p: boolean) => void;
@@ -162,6 +166,7 @@ export const useGame = create<GameStore>((set, get) => ({
   screen: 'title',
   beat: null,
   pendingBeats: [],
+  saved: null,
   dialogueQueue: [],
   lastAmbient: null,
   lastChronicle: null,
@@ -176,6 +181,20 @@ export const useGame = create<GameStore>((set, get) => ({
   log(entry) {
     set({ rescueLog: [entry, ...get().rescueLog].slice(0, 40) });
   },
+  async hydrate() {
+    if (get().state) return;                       // a live campaign always wins over the file
+    const file = await loadGame();
+    if (!file) return;
+    set({ state: file.state, ticker: file.ticker.length ? file.ticker : get().ticker, saved: file.meta });
+  },
+
+  /** Write the campaign to disk. Cheap enough to call on every turn and every move. */
+  persist() {
+    const { state, ticker } = get();
+    if (!state) return;
+    void saveGame(state, ticker).then((meta) => set({ saved: meta }));
+  },
+
   setScreen(screen) {
     set({ screen });
   },
@@ -206,6 +225,7 @@ export const useGame = create<GameStore>((set, get) => ({
       screen: 'game',
       beat: { beat: t('phase.0.text'), ticker: [], dialogue: [], ops: [], source: 'system' },
       pendingBeats: [],
+  saved: null,
       dialogueQueue: [],
       lastAmbient: null,
       fx: [],
@@ -214,6 +234,7 @@ export const useGame = create<GameStore>((set, get) => ({
       selectedRegion: null,
       paused: false,
     });
+    get().persist();
   },
 
   pushOps(ops) {
@@ -264,6 +285,7 @@ export const useGame = create<GameStore>((set, get) => ({
       });
       return;
     }
+    get().persist();
     const wantsBeat = royalOp || riotOp || next.turn % 4 === 0;
     if (wantsBeat) {
       const kind: GMContext['kind'] = royalOp ? 'royal' : riotOp ? 'riot' : 'ambient';
@@ -362,6 +384,7 @@ export const useGame = create<GameStore>((set, get) => ({
       };
       s2 = { ...s2, eventLog: [...s2.eventLog, chronicle].slice(-800) };
       set({ state: s2 });
+      get().persist();
       if (s2.ending) {
         void AsyncStorage.setItem(LAST_CHRONICLE_KEY, JSON.stringify(s2.eventLog.slice(-600))).catch(() => undefined);
         set({ screen: 'ending', lastChronicle: s2.eventLog, thinking: false });
@@ -416,6 +439,7 @@ export const useGame = create<GameStore>((set, get) => ({
       fx: [...get().fx, ...fxFromOps(applied.applied, s2.turn)].slice(-24),
       ticker: [t('store.decision', { label: option.label }), ...get().ticker].slice(0, 12),
     });
+    get().persist();
   },
 }));
 

@@ -10,9 +10,12 @@ const APP_ID = "1:848967463250:android:b59d6ec833b7912df0ca8b";
 const SA = process.env.FIREBASE_SA_KEY
   || `${process.env.HOME}/claudelovegrover.com/lovegrover-firebase-adminsdk-yv3jz-5f5b6993e1.json`;
 
-const emails = process.argv.slice(2).flatMap((a) => a.split(",")).map((s) => s.trim()).filter(Boolean);
-if (!emails.length) {
-  console.error("usage: node scripts/invite.mjs tester@example.com [more@example.com …]");
+const GROUP = "playtesters";
+const args = process.argv.slice(2);
+const syncOnly = args.includes("--sync");
+const emails = args.filter((a) => a !== "--sync").flatMap((a) => a.split(",")).map((s) => s.trim()).filter(Boolean);
+if (!emails.length && !syncOnly) {
+  console.error("usage: node scripts/invite.mjs tester@example.com [more…]   |   --sync (push newest build to the group)");
   process.exit(1);
 }
 const bad = emails.filter((e) => !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e));
@@ -55,9 +58,23 @@ const list = await api(`projects/${projectNum}/apps/${APP_ID}/releases?pageSize=
 const release = list.releases?.[0];
 if (!release) throw new Error("no releases found — run ./release.sh first");
 
-const dist = await api(`${release.name}:distribute`, { method: "POST", body: JSON.stringify({ testerEmails: emails }) });
+// One standing group, so a tester is invited once and then simply gets every build.
+if (emails.length) {
+  await api(`projects/${projectNum}/groups?groupId=${GROUP}`, {
+    method: "POST",
+    body: JSON.stringify({ displayName: "Playtesters" }),
+  }); // 409 when it already exists, which is fine
+  const join = await api(`projects/${projectNum}/groups/${GROUP}:batchJoin`, {
+    method: "POST",
+    body: JSON.stringify({ emails, createMissingTesters: true }),
+  });
+  if (!join.ok) throw new Error("could not add testers: " + (await join.text()).slice(0, 200));
+  console.log(`added to the "${GROUP}" group: ${emails.join(", ")}`);
+}
+
+const dist = await api(`${release.name}:distribute`, { method: "POST", body: JSON.stringify({ groupAliases: [GROUP] }) });
 if (!dist.ok) throw new Error("distribute failed: " + (await dist.text()).slice(0, 200));
 
-console.log(`invited ${emails.length} tester(s) to ${release.displayVersion} (build ${release.buildVersion})`);
-console.log("they get an email from Firebase; it walks them through installing App Tester.");
+console.log(`"${GROUP}" now has ${release.displayVersion} (build ${release.buildVersion})`);
+if (emails.length) console.log("new testers get one email from Firebase; after that every release reaches them automatically.");
 console.log(`share link: ${release.testingUri ?? "(enable a public link in the Firebase console)"}`);

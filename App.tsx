@@ -81,9 +81,11 @@ export default function App() {
   });
   const [webFonts, setWebFonts] = React.useState(Platform.OS !== 'web');
   const [waited, setWaited] = React.useState(false);
+  const hydrate = useGame((g) => g.hydrate);
   React.useEffect(() => {
     void load();
-  }, [load]);
+    void hydrate();
+  }, [load, hydrate]);
   React.useEffect(() => {
     const t = setTimeout(() => setWaited(true), 1200);
     return () => clearTimeout(t);

@@ -30,4 +30,7 @@ gh release create "v$VNAME" "$APK" --repo "$REPO" --title "Rajya: Rise of Kings 
 echo "== 2/2  Firebase (REST, no login needed) =="
 NODE_USE_ENV_PROXY=1 node "$HOME/claudelovegrover.com/scripts/app-distribute.mjs" "$APK" "$APP_ID" "$NOTES" "$TESTERS"
 
+# Every build goes to the standing tester group — nobody needs re-inviting.
+node scripts/invite.mjs --sync || echo "note: group sync failed; run 'npm run invite -- --sync' later"
+
 echo "done — Rajya v$VNAME on GitHub + Firebase."

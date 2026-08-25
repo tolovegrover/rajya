@@ -4,6 +4,22 @@ const { tick } = require('./engine/tick');
 const { resolveAction, resolveFreeMove, FREE_MOVE_COST, ACTIONS, hottestRegion, phaseOf, etaFor } = require('./engine/resolver');
 const { scoreOf } = require('./engine/score');
 const { backTarget } = require('./nav');
+
+// AsyncStorage is a native module; give the save layer an in-memory one to talk to.
+const Module = require('module');
+const mem = new Map();
+const origLoad = Module._load;
+Module._load = function (req, ...rest) {
+  if (req.includes('async-storage')) {
+    return { __esModule: true, default: {
+      setItem: async (k, v) => void mem.set(k, v),
+      getItem: async (k) => (mem.has(k) ? mem.get(k) : null),
+      removeItem: async (k) => void mem.delete(k),
+    } };
+  }
+  return origLoad.call(this, req, ...rest);
+};
+const { saveGame, loadGame, clearGame, describe } = require('./save');
 const { fallbackBeat } = require('./llm/fallback');
 const { extractJson } = require('./llm/gameMaster');
 const { detectRefusal } = require('./llm/refusalRescue');
@@ -156,4 +172,29 @@ check('back: sub-screens return to the title with no campaign', ['settings','cod
 check('back: game and pre-game screens reach the title', ['game','setup','disclaimer','ending'].every((s) => backTarget(s, true) === 'title'));
 check('back: only the title asks about quitting', backTarget('title', true) === 'quit' && backTarget('title', false) === 'quit');
 
-process.exit(failures ? 1 : 0);
+
+// --- the campaign survives being closed ---
+(async () => {
+  setLang('en');
+  let g = createGame('royalist', 0.5);
+  for (let i = 0; i < 10; i++) { const r = tick(g); g = applyOps(r.state, r.ops).state; }
+  const meta = await saveGame(g, ['A HEADLINE']);
+  check('save: writes a slot with a name and a where-you-are line', !!meta && meta.name.length > 0 && /week \d+/i.test(meta.subtitle));
+  const back = await loadGame();
+  check('save: reloads the same campaign', !!back && back.state.turn === g.turn && back.state.role === g.role);
+  check('save: reloads all 28 regions with their heat intact', !!back &&
+    Object.keys(back.state.regions).length === 28 &&
+    Math.round(back.state.regions.uttardesh.unrest) === Math.round(g.regions.uttardesh.unrest));
+  check('save: keeps the news ticker', !!back && back.ticker[0] === 'A HEADLINE');
+  mem.set('rajya_save_v1', JSON.stringify({ v: 999, state: {}, ticker: [], meta }));
+  check('save: a save from another version is dropped, not crashed on', (await loadGame()) === null);
+  mem.set('rajya_save_v1', '{ this is not json');
+  check('save: corrupt file is dropped, not crashed on', (await loadGame()) === null);
+  const done = createGame('strategist', 0.5);
+  done.ending = { id: 'x', title: 'T', text: 'done' };
+  await saveGame(done, []);
+  check('save: a finished campaign clears the slot', (await loadGame()) === null);
+  await clearGame();
+
+  process.exit(failures ? 1 : 0);
+})();
