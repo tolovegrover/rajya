@@ -118,7 +118,7 @@ try {
   process.exit(1);
 }
 
-// 3. distribute to the group (link joiners get it immediately)
+// 3. distribute to the group (group members get it immediately)
 const dist = await fetch(`${base}/${release}:distribute`, {
   method: "POST",
   headers: { Authorization: `Bearer ${at}`, "Content-Type": "application/json" },
@@ -126,6 +126,10 @@ const dist = await fetch(`${base}/${release}:distribute`, {
 });
 if (!dist.ok) throw new Error("distribute failed: " + (await dist.text()).slice(0, 250));
 console.log("distributed to group", groupAlias);
-console.log("\n✅ OPEN TESTING LINK — send this to friends:");
-console.log(`   https://appdistribution.firebase.google.com/join/${groupAlias}`);
-console.log("   (they sign in with any Google account; no email invite needed)");
+
+// 4. print the OFFICIAL share link (works for anyone with a Google account)
+const releaseId = release.split("/").pop();
+console.log("\n✅ SHARE LINK — send this to friends (Google sign-in, no invite needed):");
+console.log(`   https://appdistribution.firebase.google.com/testerapps/${appId}/releases/${releaseId}`);
+console.log("   (per-release link; changes with each build. For a PERMANENT self-signup");
+console.log("    link, create one in Firebase console → App Distribution → Invite links tab)");
