@@ -105,6 +105,13 @@ export function applyOps(state: GameState, ops: WorldOp[]): { state: GameState; 
         ok.push(op);
         break;
       }
+      case 'trust': {
+        const c = s.characters[op.id];
+        if (!c) break;
+        s.trust[op.id] = clamp((s.trust[op.id] ?? 0) + d(op.delta), -100, 100);
+        ok.push(op);
+        break;
+      }
       case 'headline': {
         ok.push(op);
         break;
@@ -138,6 +145,7 @@ export function opTitle(op: WorldOp, s: GameState): string {
     case 'restoreroyal': return t('op.restore', { r: rn(op.region), title: t(`royal.${op.region}`, {}, ROYAL_TITLES[op.region] ?? 'Throne') });
     case 'election': return t('op.election', { r: rn(op.region), f: t(`fac.${op.winner}`, {}, op.winner) });
     case 'character': return t('op.mood', { c: s.characters[op.id]?.name ?? op.id, n: op.moodDelta ?? 0 }) + (op.kill ? ' †' : '');
+    case 'trust': return t('op.trust', { c: s.characters[op.id]?.name ?? op.id, n: op.delta });
     case 'headline': return op.text;
   }
 }

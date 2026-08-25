@@ -95,6 +95,9 @@ export function worldSummary(s: GameState): string {
     )
     .join(' ');
   const factions = Object.values(s.factions).map((f) => `${f.id}:${Math.round(f.power)}`).join(' ');
+  const trust = Object.entries(s.trust)
+    .map(([id, v]) => `${id}:${Math.round(v)}`)
+    .join(' ');
   const trim = (e: { headline: string }) => e.headline.slice(0, 90);
   const recent = s.eventLog.slice(-8).map(trim).join(' | ');
   // The model has no memory between calls, so hand it the arc of the campaign too:
@@ -110,6 +113,7 @@ export function worldSummary(s: GameState): string {
     .join(' | ');
   return `TURN ${s.turn} (week ${s.week}, ${s.year}) eta=${s.eta.toFixed(2)} role=${s.role} influence=${Math.round(s.influence)} treasury=${Math.round(s.treasury)} legitimacy=${Math.round(s.legitimacy)} stability=${Math.round(s.stability)} royalPop%=${s.royalPopPct}
 FACTIONS ${factions}
+TRUST (player standing with each leader, -100..100; warm allies obey, cold ones refuse) ${trust}
 REGIONS ${regions}
 RECENT HEADLINES: ${recent}${earlier ? `\nEARLIER IN THIS CAMPAIGN (for continuity, do not repeat): ${earlier}` : ''}`;
 }

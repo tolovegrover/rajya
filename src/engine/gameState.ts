@@ -7,6 +7,27 @@ import { t } from '../i18n';
 
 export const cloneState = (s: GameState): GameState => JSON.parse(JSON.stringify(s)) as GameState;
 
+/** Opening trust: your inner circle starts warm; everyone else is polite, wary, or hostile. */
+function trustSeed(role: PlayerRoleId, characters: Record<string, Character>): Record<string, number> {
+  const allies: Record<PlayerRoleId, string[]> = {
+    strategist: ['moni', 'amir', 'jogi'],
+    agitator: ['devraj', 'aarab'],
+    royalist: ['vikram', 'bikash'],
+    oligarch: ['aarab', 'bikash'],
+  };
+  const rivals: Record<PlayerRoleId, string[]> = {
+    strategist: ['raul', 'moomta', 'devraj'],
+    agitator: ['ramrao', 'moni'],
+    royalist: ['moni', 'amir'],
+    oligarch: ['amir'],
+  };
+  const out: Record<string, number> = {};
+  for (const id of Object.keys(characters)) {
+    out[id] = allies[role]?.includes(id) ? 45 : rivals[role]?.includes(id) ? -25 : 0;
+  }
+  return out;
+}
+
 /**
  * Shake the opening position so no two campaigns are the same republic:
  * every region drifts a little, two or three start as live flashpoints, and one
@@ -74,6 +95,8 @@ export function createGame(role: PlayerRoleId, eta: number, customCharacters: Ch
       },
     ],
     pendingDilemma: null,
+    trust: trustSeed(role, characters),
+    edictLastUsed: {},
     ending: null,
     royalPopPct: 0,
     nextElectionTurn: 16,

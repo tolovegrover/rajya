@@ -94,21 +94,65 @@ export const PROCEDURAL_DILEMMAS: ProceduralDilemma[] = [
     ],
   },
   {
-    text: 'Gen. Rudra Pratap offers joint patrolling in the burning districts. The Cabinet is watching.',
+    text: 'Zhundesian troops mass at the Kashyapmir passes, and their general tweets about "historic wrongs". The border states want an answer tonight.',
     options: [
       {
-        label: 'March with the troops',
+        label: 'Answer in kind — move the army up',
         ops: [
-          { op: 'unrest', region: '{region}', delta: -14 },
-          { op: 'separatist', region: '{region}', delta: 6 },
-          { op: 'legitimacy', delta: -3 },
+          { op: 'armyMove', from: 'madhyadesh', to: 'kashyapmir' },
+          { op: 'legitimacy', delta: 5 },
+          { op: 'separatist', region: 'kashyapmir', delta: 4 },
+          { op: 'treasury', delta: -6 },
         ],
       },
       {
-        label: 'Decline the soldiers',
+        label: 'Offer a summit, quietly',
         ops: [
-          { op: 'unrest', region: '{region}', delta: -4 },
-          { op: 'legitimacy', delta: 4 },
+          { op: 'legitimacy', delta: -3 },
+          { op: 'treasury', delta: 4 },
+          { op: 'loyalty', region: 'kashyapmir', delta: 6 },
+        ],
+      },
+    ],
+  },
+  {
+    text: 'A Zhundesian tanker breaks down off Cheralam with crude worth a fortune. Every refinery in Bharatam is whispering.',
+    options: [
+      {
+        label: 'Confiscate it — the republic needs the fuel',
+        ops: [
+          { op: 'treasury', delta: 14 },
+          { op: 'legitimacy', delta: -4 },
+          { op: 'unrest', region: 'cheralam', delta: 5 },
+        ],
+      },
+      {
+        label: 'Tow it home politely and bill them',
+        ops: [
+          { op: 'treasury', delta: 4 },
+          { op: 'legitimacy', delta: 3 },
+        ],
+      },
+    ],
+  },
+  {
+    text: 'A wave of refugees from the Neelan plains reaches Kamarupa. The Studio runs "they" on a loop; the elders run kitchens.',
+    options: [
+      {
+        label: 'Open the gates, loudly',
+        ops: [
+          { op: 'legitimacy', delta: 3 },
+          { op: 'unrest', region: 'kamarupa', delta: 6 },
+          { op: 'treasury', delta: -5 },
+          { op: 'factionPower', faction: 'milli', delta: 5 },
+        ],
+      },
+      {
+        label: 'Fence it, silently',
+        ops: [
+          { op: 'legitimacy', delta: -5 },
+          { op: 'unrest', region: 'kamarupa', delta: -4 },
+          { op: 'separatist', region: 'kamarupa', delta: 3 },
         ],
       },
     ],

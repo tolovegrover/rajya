@@ -32,7 +32,10 @@ export function StatsBar({ state }: { state: GameState }) {
       {phase >= 1 && cell(t('stat.score'), scored ? `${scoreOf(state)}` : '—', scored ? GOLD : '#6b7789')}
       {phase >= 2 && cell('η', state.eta.toFixed(2), '#9aa4b8')}
       <View style={styles.role}>
-        <Text style={styles.roleText} numberOfLines={2}>{t(`role.${state.role}.name`, {}, role?.name ?? '')}</Text>
+        <Text style={styles.roleText} numberOfLines={2}>
+          {t(`role.${state.role}.name`, {}, role?.name ?? '')}{'\n'}
+          <Text style={styles.actText}>ACT {'I'.repeat(Math.max(1, phaseOf(state.turn) + 1))} · {t(`phase.${phaseOf(state.turn)}.name`, {})}</Text>
+        </Text>
       </View>
     </LinearGradient>
   );
@@ -54,4 +57,5 @@ const styles = StyleSheet.create({
   value: { fontFamily: F.titleBlack, fontSize: 17, letterSpacing: 0.5 },
   role: { flex: 1, alignItems: 'flex-end', paddingRight: 4, paddingBottom: 2 },
   roleText: { color: GOLD, fontSize: 10, fontWeight: '900', textAlign: 'right', letterSpacing: 0.5 },
+  actText: { color: '#8d9ab5', fontSize: 8, fontWeight: '800' },
 });

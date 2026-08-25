@@ -6,7 +6,7 @@ import {
 import { createGame } from './engine/gameState';
 import { t, setLang } from './i18n';
 import { applyOps, opTitle } from './engine/reducer';
-import { resolveAction, resolveFreeMove, assessFreeMove, FREE_MOVE_COST, ACTIONS, phaseOf } from './engine/resolver';
+import { resolveAction, resolveFreeMove, assessFreeMove, resolveEdict, EDICTS, FREE_MOVE_COST, ACTIONS, phaseOf } from './engine/resolver';
 import { tick } from './engine/tick';
 import { askGameMaster, GMContext } from './llm/gameMaster';
 import { hasAI } from './llm/adapters';
@@ -15,6 +15,7 @@ import { fallbackBeat } from './llm/fallback';
 
 const SETTINGS_KEY = 'rajya_settings_v1';
 const LAST_CHRONICLE_KEY = 'rajya_last_chronicle_v1';
+const ENDINGS_KEY = 'rajya_endings_v1';
 
 export const DEFAULT_SETTINGS: LLMSettings = {
   lang: 'hi',
@@ -130,6 +131,10 @@ interface GameStore {
   newGame: (role: GameState['role'], eta: number) => void;
   runTick: (silent?: boolean) => void;
   doAction: (actionId: string) => Promise<void>;
+  doEdict: (edictId: string) => Promise<void>;
+  endingsSeen: string[];
+  recordEnding: (id: string) => void;
+  loadMeta: () => Promise<void>;
   proposeFreeMove: (text: string) => void;
   confirmFreeMove: () => Promise<void>;
   cancelFreeMove: () => void;
@@ -183,6 +188,23 @@ export const useGame = create<GameStore>((set, get) => ({
   selectedRegion: null,
   paused: false,
   autoplay: false,
+  endingsSeen: [],
+  recordEnding(id) {
+    const seen = get().endingsSeen.includes(id) ? get().endingsSeen : [...get().endingsSeen, id];
+    set({ endingsSeen: seen });
+    AsyncStorage.setItem(ENDINGS_KEY, JSON.stringify(seen)).catch(() => undefined);
+  },
+  async loadMeta() {
+    try {
+      const raw = await AsyncStorage.getItem(ENDINGS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as string[];
+        if (Array.isArray(parsed)) set({ endingsSeen: parsed });
+      }
+    } catch {
+      /* keep empty */
+    }
+  },
   targetRegion: 'uttardesh',
 
   log(entry) {
@@ -278,6 +300,7 @@ export const useGame = create<GameStore>((set, get) => ({
       set({ state: s2 });
       void AsyncStorage.setItem(LAST_CHRONICLE_KEY, JSON.stringify(s2.eventLog.slice(-600))).catch(() => undefined);
       set({ screen: 'ending', lastChronicle: s2.eventLog });
+      if (s2.ending) get().recordEnding(s2.ending.id);
       void get().requestEnding();
       return;
     }
@@ -328,6 +351,25 @@ export const useGame = create<GameStore>((set, get) => ({
     });
     const label = t(`act.${actionId}`, {}, ACTIONS[state.role].find((a) => a.id === actionId)?.label ?? actionId);
     await get().requestBeat('action', targetRegion, label, outcome.headline, outcome.ops);
+  },
+
+  async doEdict(edictId) {
+    const { state, targetRegion, pendingBeats } = get();
+    if (!state || state.ending || get().thinking || get().beat || pendingBeats.length > 0) return;
+    const r = resolveEdict(state, edictId);
+    if (!r.ok) return;
+    const def = EDICTS.find((e) => e.id === edictId);
+    let s = { ...state, influence: Math.max(0, state.influence - (def?.cost ?? 0)), edictLastUsed: { ...state.edictLastUsed, [edictId]: state.turn } };
+    const applied = applyOps(s, r.ops);
+    s = applied.state;
+    set({ state: s, fx: [...get().fx, ...fxFromOps(applied.applied, s.turn)].slice(-24) });
+    const headline = r.ops.find((o) => o.op === 'headline') as { text?: string } | undefined;
+    const htext = headline?.text ?? edictId;
+    set({
+      thinking: true,
+      ticker: [htext.toUpperCase().slice(0, 90), ...get().ticker].slice(0, 12),
+    });
+    await get().requestBeat('action', targetRegion, t(`ed.${edictId}`, {}, edictId), htext, r.ops);
   },
 
   proposeFreeMove(text) {
@@ -426,6 +468,7 @@ export const useGame = create<GameStore>((set, get) => ({
       if (s2.ending) {
         void AsyncStorage.setItem(LAST_CHRONICLE_KEY, JSON.stringify(s2.eventLog.slice(-600))).catch(() => undefined);
         set({ screen: 'ending', lastChronicle: s2.eventLog, thinking: false });
+        get().recordEnding(s2.ending.id);
         void get().requestEnding();
         return;
       }

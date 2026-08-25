@@ -122,6 +122,7 @@ export type WorldOp =
   | { op: 'restoreroyal'; region: RegionId; king?: string }
   | { op: 'election'; region: RegionId; winner: FactionId }
   | { op: 'character'; id: string; moodDelta?: number; kill?: boolean }
+  | { op: 'trust'; id: string; delta: number }
   | { op: 'headline'; text: string };
 
 export interface DialogueLine {
@@ -180,6 +181,8 @@ export interface GameState {
   characters: Record<string, Character>;
   eventLog: GameEvent[];
   pendingDilemma: Dilemma | null;
+  trust: Record<string, number>;
+  edictLastUsed: Record<string, number>;
   ending: { id: string; title: string; text: string } | null;
   royalPopPct: number;
   nextElectionTurn: number;

@@ -8,13 +8,13 @@ import { NewsTicker } from '../components/NewsTicker';
 import { DialogueBox } from '../components/DialogueBox';
 import { EventCard } from '../components/EventCard';
 import { MovePromptModal } from '../components/MovePromptModal';
-import { ACTIONS, phaseOf } from '../engine/resolver';
+import { ACTIONS, EDICTS, phaseOf } from '../engine/resolver';
 import { botPlan, botPickDilemma } from '../engine/bot';
 
 export function GameScreen() {
   const {
     state, fx, ticker, thinking, beat, pendingBeats, dialogueQueue, lastAmbient, selectedRegion, targetRegion, autoplay, movePrompt,
-    runTick, doAction, dismissBeat, dismissAmbient, chooseDilemma, popDialogue, selectRegion, setTarget, setPaused, setScreen, setAutoplay,
+    runTick, doAction, doEdict, dismissBeat, dismissAmbient, chooseDilemma, popDialogue, selectRegion, setTarget, setPaused, setScreen, setAutoplay,
     proposeFreeMove, confirmFreeMove, cancelFreeMove,
     rescueLog,
   } = useGame();
@@ -160,6 +160,26 @@ export function GameScreen() {
               <Text style={s.actionCost}>{a.usesInfluence ? `◎${a.cost}` : `💰${a.cost}`}</Text>
             </Pressable>
           ))}
+        </ScrollView>
+        <ScrollView horizontal contentContainerStyle={{ gap: 8, paddingHorizontal: 8 }} showsHorizontalScrollIndicator={false}>
+          {EDICTS.map((e) => {
+            const locked = (e.phase ?? 0) > phase;
+            const last = state.edictLastUsed[e.id] ?? -1e9;
+            const left = Math.max(0, e.cooldown - (state.turn - last));
+            const ready = !locked && left === 0 && state.influence >= e.cost;
+            return (
+              <Pressable
+                key={e.id}
+                style={[s.actionBtn, !ready && s.actionDisabled]}
+                onPress={() => void doEdict(e.id)}
+                disabled={thinking || !!beat || !!state.ending || !ready}
+              >
+                <Text style={s.actionIcon}>{locked ? '🔒' : e.icon}</Text>
+                <Text style={s.actionLabel}>{t(`ed.${e.id}`, {}, e.id.toUpperCase())}</Text>
+                <Text style={s.actionCost}>{locked ? '' : left > 0 ? `⏳${left}` : `◎${e.cost}`}</Text>
+              </Pressable>
+            );
+          })}
         </ScrollView>
         <View style={s.footRow}>
           <Pressable onPress={() => setScreen('codex')}><Text style={s.footBtn}>{t('game.codex')}</Text></Pressable>

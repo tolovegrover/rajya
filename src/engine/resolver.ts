@@ -131,6 +131,76 @@ export function resolveFreeMove(
   };
 }
 
+export interface EdictDef {
+  id: string;
+  icon: string;
+  phase: number;
+  cost: number;
+  cooldown: number;
+  desc: string;
+}
+
+export const EDICTS: EdictDef[] = [
+  { id: 'mediaorder', icon: '📡', phase: 1, cost: 12, cooldown: 15, desc: 'One newsroom to rule them all. The Studio blooms; the republic raises an eyebrow.' },
+  { id: 'midnight', icon: '💸', phase: 1, cost: 15, cooldown: 24, desc: 'The big notes die at midnight. Treasury floods; the bazaars and fields howl.' },
+  { id: 'garibi', icon: '🎁', phase: 2, cost: 20, cooldown: 25, desc: 'Direct cash to every poor household. Calm streets, empty coffers, grateful voters.' },
+  { id: 'crowntalk', icon: '👑', phase: 2, cost: 18, cooldown: 20, desc: 'Outlaw throne restoration talk. Royalists retreat; the republic stands taller.' },
+  { id: 'emergency', icon: '🛑', phase: 3, cost: 30, cooldown: 40, desc: 'Emergency powers: silence every street tonight, and pay for it in history.' },
+];
+
+export function resolveEdict(
+  s: GameState,
+  id: string
+): { ok: boolean; reason?: 'locked' | 'cooldown' | 'poor'; ops: WorldOp[] } {
+  const def = EDICTS.find((e) => e.id === id);
+  if (!def) return { ok: false, reason: 'locked', ops: [] };
+  if ((def.phase ?? 0) > phaseOf(s.turn)) return { ok: false, reason: 'locked', ops: [] };
+  const last = s.edictLastUsed[id] ?? -1e9;
+  if (s.turn - last < def.cooldown) return { ok: false, reason: 'cooldown', ops: [] };
+  if (s.influence < def.cost) return { ok: false, reason: 'poor', ops: [] };
+  const all = Object.values(s.regions).filter((r) => !r.kingdom);
+  const poor = [...all].sort((a, b) => a.wealth - b.wealth).slice(0, 3).map((r) => r.id);
+  const hot = [...all].sort((a, b) => b.unrest - a.unrest).slice(0, 3).map((r) => r.id);
+  const ops: WorldOp[] = [];
+  const push = (op: WorldOp) => ops.push(op);
+  switch (id) {
+    case 'mediaorder':
+      push({ op: 'factionPower', faction: 'media', delta: 15 });
+      push({ op: 'legitimacy', delta: -6 });
+      hot.forEach((r) => push({ op: 'unrest', region: r, delta: -4 }));
+      push({ op: 'headline', text: '📡 NATIONAL MEDIA ORDER: THE STUDIO THANKS YOU LOUDLY' });
+      break;
+    case 'midnight':
+      push({ op: 'treasury', delta: 25 });
+      push({ op: 'legitimacy', delta: -8 });
+      poor.forEach((r) => push({ op: 'landHeat', region: r, delta: 10 }));
+      poor.forEach((r) => push({ op: 'unrest', region: r, delta: 5 }));
+      push({ op: 'headline', text: '💸 MIDNIGHT NOTE-BAN: QUEUES AT DAWN, CRITICS BY NOON' });
+      break;
+    case 'garibi':
+      push({ op: 'treasury', delta: -30 });
+      poor.forEach((r) => push({ op: 'unrest', region: r, delta: -12 }));
+      poor.forEach((r) => push({ op: 'loyalty', region: r, delta: 8 }));
+      push({ op: 'headline', text: '🎁 DIRECT GARIBI TRANSFER: CYLINDERS AND FORGIVENESS' });
+      break;
+    case 'crowntalk':
+      all.forEach((r) => push({ op: 'royalist', region: r.id, delta: -10 }));
+      push({ op: 'factionPower', faction: 'rajwada', delta: -12 });
+      push({ op: 'legitimacy', delta: 8 });
+      push({ op: 'headline', text: '👑 CROWN DIALOGUE ACT: PALACES SULK, THE REPUBLIC SIGHS' });
+      break;
+    case 'emergency':
+      all.forEach((r) => push({ op: 'unrest', region: r.id, delta: -15 }));
+      all.forEach((r) => push({ op: 'separatist', region: r.id, delta: 5 }));
+      push({ op: 'legitimacy', delta: -15 });
+      push({ op: 'headline', text: '🛑 EMERGENCY POWERS INVOKED: THE STREETS GO QUIET' });
+      break;
+    default:
+      return { ok: false, reason: 'locked', ops: [] };
+  }
+  return { ok: true, ops };
+}
+
 export function hottestRegion(s: GameState): string {
   let best = '';
   let score = -1;
@@ -144,9 +214,61 @@ export function hottestRegion(s: GameState): string {
   return best;
 }
 
+/** Some moves are only available while the right person trusts you. */
+export const TRUST_GATES: Record<string, [string, number]> = {
+  crackdown: ['amir', -10],
+  deploy: ['rudra', 0],
+  march: ['devraj', 20],
+  fast: ['devraj', 10],
+  buymla: ['vikram', 25],
+  broker: ['bikash', 0],
+  crisisbet: ['aarab', -10],
+};
+
+/** Trust shifts bundled with each action (fired on success). */
+const TRUST_DELTAS: Record<string, [string, number][]> = {
+  post: [['moni', 2]],
+  speech: [['moni', 4]],
+  crackdown: [['amir', 5], ['maulana', -6], ['rudra', -2]],
+  welfare: [['moni', 3], ['thikait', 5], ['devraj', -4]],
+  negotiate: [['thikait', 4], ['devraj', 3]],
+  deploy: [['rudra', 2], ['amir', 3], ['kalai', -5]],
+  reel: [['devraj', 2]],
+  rally: [['devraj', 4], ['ramrao', -3]],
+  fast: [['devraj', 6], ['aarab', 4]],
+  blitz: [['aarab', 6]],
+  litigate: [['devraj', 4]],
+  march: [['devraj', 8], ['moni', -6]],
+  nostalgia: [['vikram', 2]],
+  court: [['vikram', 5]],
+  heritage: [['vikram', 6]],
+  buymla: [['vikram', 7], ['bikash', 3]],
+  rumor: [['vikram', 4]],
+  memepage: [['aarab', 2]],
+  fund: [['bikash', 3], ['aarab', 2]],
+  buymedia: [['aarab', 8]],
+  broker: [['bikash', 8], ['moni', -3]],
+  crisisbet: [['aarab', 3]],
+};
+
+const BACKFIRE_TRUST: Record<string, [string, number][]> = {
+  strategist: [['moni', -3]],
+  agitator: [['devraj', -3]],
+  royalist: [['vikram', -3]],
+  oligarch: [['aarab', -3]],
+};
+
 export function resolveAction(s: GameState, actionId: string, targetRegion: string): { ok: boolean; odds: number; headline: string; ops: WorldOp[]; influenceDelta: number; treasuryDelta: number } {
   const def = ACTIONS[s.role].find((a) => a.id === actionId);
   if (!def) return { ok: false, odds: 0, headline: t('res.none'), ops: [], influenceDelta: 0, treasuryDelta: 0 };
+  const gate = TRUST_GATES[actionId];
+  if (gate) {
+    const [charId, min] = gate;
+    const trust = s.trust[charId] ?? 0;
+    if (trust < min) {
+      return { ok: false, odds: 0, headline: t('res.trust', { c: s.characters[charId]?.name ?? charId, n: min }), ops: [], influenceDelta: 0, treasuryDelta: 0 };
+    }
+  }
   const rg = s.regions[targetRegion] ?? s.regions['uttardesh'];
   const nbrs = rg.neighbors;
   const spread = (delta: number, field: 'unrest' | 'loyalty' | 'royalist' | 'reservationHeat' | 'landHeat' | 'separatist'): WorldOp[] =>
@@ -168,7 +290,7 @@ export function resolveAction(s: GameState, actionId: string, targetRegion: stri
   let headline = '';
 
   if (!ok) {
-    ops = [{ op: 'unrest', region: rg.id, delta: 5, reason: 'backfire' }, { op: 'headline', text: K('fail') }];
+    ops = [{ op: 'unrest', region: rg.id, delta: 5, reason: 'backfire' }, { op: 'headline', text: K('fail') }, ...(BACKFIRE_TRUST[s.role] ?? []).map(([id, delta]) => ({ op: 'trust', id, delta }) as WorldOp)];
     headline = H('fail');
     return { ok, odds, headline, ops, influenceDelta, treasuryDelta };
   }
@@ -275,5 +397,6 @@ export function resolveAction(s: GameState, actionId: string, targetRegion: stri
       ops = [{ op: 'headline', text: K('default') }];
       headline = H('default');
   }
+  ops.push(...(TRUST_DELTAS[actionId] ?? []).map(([id, delta]) => ({ op: 'trust', id, delta }) as WorldOp));
   return { ok, odds, headline, ops, influenceDelta, treasuryDelta };
 }

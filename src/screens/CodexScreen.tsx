@@ -37,6 +37,12 @@ export function CodexScreen() {
                   <Text style={s.name}>{displayName(settings, c)}</Text>
                   <Text style={s.title}>{t(`char.${c.id}.title`, {}, c.title)}</Text>
                   <Text style={s.persona} numberOfLines={4}>{settings.personaOverrides[c.id] ?? t(`char.${c.id}.persona`, {}, c.persona)}</Text>
+                  {state && (
+                    <View style={s.trustWrap}>
+                      <View style={[s.trustBar, { width: `${Math.max(4, Math.round((state.trust[c.id] ?? 0) + 100) / 2)}%`, backgroundColor: (state.trust[c.id] ?? 0) >= 0 ? '#5aa2e8' : '#e8875a' }]} />
+                      <Text style={s.trustText}>{t('codex.trust', { n: Math.round(state.trust[c.id] ?? 0) })}</Text>
+                    </View>
+                  )}
                 </View>
               </View>
             </View>
@@ -102,6 +108,9 @@ const s = StyleSheet.create({
   title: { color: '#e6b422', fontSize: 10, marginBottom: 4 },
   persona: { color: '#7f8ea3', fontSize: 11, lineHeight: 15 },
   powerRow: { height: 14, backgroundColor: '#0d1322', borderRadius: 7, marginTop: 6, justifyContent: 'center', overflow: 'hidden' },
+  trustWrap: { height: 14, backgroundColor: '#0d1322', borderRadius: 7, marginTop: 6, justifyContent: 'center', overflow: 'hidden' },
+  trustBar: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 7 },
+  trustText: { color: '#eef1f8', fontSize: 9, fontWeight: '900', textAlign: 'center' },
   powerBar: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: '#4d8fd1' },
   powerText: { color: '#eef1f8', fontSize: 9, fontWeight: '900', textAlign: 'center' },
   h: { color: '#e6b422', fontSize: 14, fontWeight: '900', marginTop: 8, letterSpacing: 1 },

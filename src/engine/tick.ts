@@ -108,10 +108,43 @@ export function tick(s: GameState): { state: GameState; ops: WorldOp[] } {
   }
 
   const chaoses = ['defection', 'sting', 'absurd', 'betrayal'];
-  if (rand() < eta * 0.12) {
+  // The last act leans in: after week 100 the noise rises even in calm campaigns.
+  const effEta = n.turn > 100 ? Math.min(1, n.eta + 0.2) : n.eta;
+  if (rand() < effEta * 0.12) {
     const rg = pick(Object.values(n.regions).filter((r) => !r.kingdom));
     ops.push({ op: 'unrest', region: rg.id, delta: 7 });
     ops.push({ op: 'headline', text: t('tick.chaos', { kind: t(`chaos.${pick(chaoses)}`), region: rg.name }) });
+  }
+
+  // The betrayer: in the last act, an ally of convenience shows their price.
+  if (n.turn >= 88 && !(n as GameState & { betrayerFired?: boolean }).betrayerFired && rand() < 0.25 + n.eta * 0.3) {
+    const allies: Record<string, string[]> = {
+      strategist: ['raul', 'bikash', 'kalai'],
+      agitator: ['ramrao', 'thikait', 'aarab'],
+      royalist: ['bikash', 'moomta'],
+      oligarch: ['bikash', 'kerji'],
+    };
+    const pool = (allies[n.role] ?? ['bikash']).filter((id) => n.characters[id]?.alive);
+    if (pool.length) {
+      const traitor = pick(pool);
+      (n as GameState & { betrayerFired?: boolean }).betrayerFired = true;
+      n.trust[traitor] = clamp((n.trust[traitor] ?? 0) - 60, -100, 100);
+      n.legitimacy = clamp(n.legitimacy - 8, 0, 100);
+      const capital = n.regions['indraprastha'];
+      if (capital) capital.unrest = clamp(capital.unrest + 8, 0, 100);
+      ops.push({ op: 'trust', id: traitor, delta: -60 });
+      ops.push({ op: 'legitimacy', delta: -8 });
+      ops.push({ op: 'headline', text: t('tick.betrayer', { name: n.characters[traitor]?.name ?? traitor }) });
+    }
+  }
+
+  // Zhundes never sleeps: a border flutter every few weeks keeps the map honest.
+  if (n.turn > 20 && rand() < 0.05) {
+    const border = pick(['kashyapmir', 'purvanachal', 'kamarupa', 'cheralam', 'panchanad'].map((id) => n.regions[id]).filter(Boolean));
+    if (border && !border.kingdom) {
+      border.unrest = clamp(border.unrest + 3, 0, 100);
+      ops.push({ op: 'headline', text: t('tick.intl', { region: border.name }) });
+    }
   }
 
   recompute(n);
