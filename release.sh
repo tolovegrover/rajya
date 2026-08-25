@@ -33,4 +33,7 @@ NODE_USE_ENV_PROXY=1 node "$HOME/claudelovegrover.com/scripts/app-distribute.mjs
 # Every build goes to the standing tester group — nobody needs re-inviting.
 node scripts/invite.mjs --sync || echo "note: group sync failed; run 'npm run invite -- --sync' later"
 
+echo "== 3/3  Open testing link (friends join via Google, no email invites) =="
+NODE_USE_ENV_PROXY=1 node scripts/app-open.mjs "$APK" "$APP_ID" "$NOTES" rajya
+
 echo "done — Rajya v$VNAME on GitHub + Firebase."
