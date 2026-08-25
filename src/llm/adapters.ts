@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { LLMSettings } from '../types';
 
 export interface LLMRequest {
@@ -12,6 +13,8 @@ export interface LLMClient {
 }
 
 const DEFAULT_MAX = 1200;
+const IS_WEB = Platform.OS === 'web';
+const RELAY = 'https://lovegrover.com/api/llm';
 
 export class HttpError extends Error {
   status: number;
@@ -23,25 +26,38 @@ export class HttpError extends Error {
 
 const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
+// Gemini and Anthropic don't send CORS headers, so browsers block direct calls.
+// On web we forward through lovegrover.com/api/llm (host-whitelisted, keys
+// never stored server-side); native apps call the APIs directly.
+async function post(url: string, headers: Record<string, string>, bodyObj: unknown): Promise<Response> {
+  if (!IS_WEB) {
+    return fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(bodyObj) });
+  }
+  return fetch(RELAY, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ url, headers, body: bodyObj }),
+  });
+}
+
 export function claudeClient(settings: LLMSettings, model: string): LLMClient {
   return {
     name: `claude:${model}`,
     async complete(req: LLMRequest) {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
+      const res = await post(
+        'https://api.anthropic.com/v1/messages',
+        {
           'x-api-key': settings.anthropicKey,
           'anthropic-version': '2023-06-01',
           'anthropic-dangerous-direct-browser-access': 'true',
         },
-        body: JSON.stringify({
+        {
           model,
           max_tokens: req.maxTokens ?? DEFAULT_MAX,
           system: req.system,
           messages: [{ role: 'user', content: req.user }],
-        }),
-      });
+        }
+      );
       if (!res.ok) throw new HttpError(res.status, await res.text());
       const data = (await res.json()) as { content?: { type: string; text?: string }[] };
       return (data.content ?? []).filter((c) => c.type === 'text').map((c) => c.text ?? '').join('');
@@ -104,16 +120,13 @@ export async function testConnection(settings: LLMSettings): Promise<{ ok: boole
 export function geminiClient(settings: LLMSettings, model: string): LLMClient {
   const base = 'https://generativelanguage.googleapis.com/v1beta';
   const call = async (req: LLMRequest) => {
-    const res = await fetch(
+    const res = await post(
       `${base}/models/${model}:generateContent?key=${encodeURIComponent(settings.geminiKey)}`,
+      { 'x-goog-api-key': settings.geminiKey },
       {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: req.system }] },
-          contents: [{ role: 'user', parts: [{ text: req.user }] }],
-          generationConfig: { maxOutputTokens: req.maxTokens ?? DEFAULT_MAX, temperature: 1 },
-        }),
+        systemInstruction: { parts: [{ text: req.system }] },
+        contents: [{ role: 'user', parts: [{ text: req.user }] }],
+        generationConfig: { maxOutputTokens: req.maxTokens ?? DEFAULT_MAX, temperature: 1 },
       }
     );
     if (!res.ok) throw new HttpError(res.status, await res.text());
