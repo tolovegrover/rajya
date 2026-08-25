@@ -4,6 +4,7 @@ const { tick } = require('./engine/tick');
 const { resolveAction, resolveFreeMove, FREE_MOVE_COST, ACTIONS, hottestRegion, phaseOf, etaFor } = require('./engine/resolver');
 const { scoreOf } = require('./engine/score');
 const { backTarget } = require('./nav');
+const { worldSummary } = require('./llm/prompts');
 
 // AsyncStorage is a native module; give the save layer an in-memory one to talk to.
 const Module = require('module');
@@ -172,6 +173,21 @@ check('back: sub-screens return to the title with no campaign', ['settings','cod
 check('back: game and pre-game screens reach the title', ['game','setup','disclaimer','ending'].every((s) => backTarget(s, true) === 'title'));
 check('back: only the title asks about quitting', backTarget('title', true) === 'quit' && backTarget('title', false) === 'quit');
 
+
+// --- the narrator remembers the campaign, not just this week ---
+let long = createGame('agitator', 0.5);
+for (let i = 0; i < 60; i++) {
+  const r = tick(long);
+  long = applyOps(r.state, r.ops).state;
+  long.eventLog.push({ turn: long.turn, week: long.week, kind: 'beat', headline: `WEEK ${long.week} REPORT`, beat: '' });
+  if (i % 12 === 0) long.eventLog.push({ turn: long.turn, week: long.week, kind: 'decision', headline: `DECISION AT WEEK ${long.week}`, beat: '' });
+}
+const summary = worldSummary(long);
+check('memory: the prompt carries the recent week', summary.includes('RECENT HEADLINES'));
+check('memory: the prompt carries earlier turns too', summary.includes('EARLIER IN THIS CAMPAIGN'));
+check('memory: the player\'s own decisions survive into it', (summary.match(/DECISION AT WEEK/g) || []).length >= 2);
+check('memory: it stays compact', summary.length < 4000);
+check('memory: a fresh campaign has no earlier section', !worldSummary(createGame('oligarch', 0.5)).includes('EARLIER IN'));
 
 // --- the campaign survives being closed ---
 (async () => {

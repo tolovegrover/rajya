@@ -95,9 +95,21 @@ export function worldSummary(s: GameState): string {
     )
     .join(' ');
   const factions = Object.values(s.factions).map((f) => `${f.id}:${Math.round(f.power)}`).join(' ');
-  const headlines = s.eventLog.slice(-6).map((e) => e.headline).join(' | ');
+  const trim = (e: { headline: string }) => e.headline.slice(0, 90);
+  const recent = s.eventLog.slice(-8).map(trim).join(' | ');
+  // The model has no memory between calls, so hand it the arc of the campaign too:
+  // the player's own decisions first, then an even sample of what came before.
+  const older = s.eventLog.slice(0, -8);
+  const decisions = older.filter((e) => e.kind === 'decision').slice(-4);
+  const rest = older.filter((e) => !decisions.includes(e));
+  const step = Math.max(1, Math.ceil(rest.length / 4));
+  const sampled = rest.filter((_, i) => i % step === 0).slice(-4);
+  const earlier = [...sampled, ...decisions]
+    .sort((a, b) => a.turn - b.turn)
+    .map((e) => `w${e.week}: ${trim(e)}`)
+    .join(' | ');
   return `TURN ${s.turn} (week ${s.week}, ${s.year}) eta=${s.eta.toFixed(2)} role=${s.role} influence=${Math.round(s.influence)} treasury=${Math.round(s.treasury)} legitimacy=${Math.round(s.legitimacy)} stability=${Math.round(s.stability)} royalPop%=${s.royalPopPct}
 FACTIONS ${factions}
 REGIONS ${regions}
-RECENT HEADLINES: ${headlines}`;
+RECENT HEADLINES: ${recent}${earlier ? `\nEARLIER IN THIS CAMPAIGN (for continuity, do not repeat): ${earlier}` : ''}`;
 }
