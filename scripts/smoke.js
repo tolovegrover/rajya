@@ -4,6 +4,7 @@ const { tick } = require('./engine/tick');
 const { resolveAction, resolveFreeMove, FREE_MOVE_COST, ACTIONS, hottestRegion, phaseOf, etaFor } = require('./engine/resolver');
 const { scoreOf } = require('./engine/score');
 const { backTarget } = require('./nav');
+const { isNewer } = require('./update');
 const { worldSummary } = require('./llm/prompts');
 
 // AsyncStorage is a native module; give the save layer an in-memory one to talk to.
@@ -173,6 +174,13 @@ check('back: sub-screens return to the title with no campaign', ['settings','cod
 check('back: game and pre-game screens reach the title', ['game','setup','disclaimer','ending'].every((s) => backTarget(s, true) === 'title'));
 check('back: only the title asks about quitting', backTarget('title', true) === 'quit' && backTarget('title', false) === 'quit');
 
+
+// --- update check ---
+check('update: 0.10 beats 0.9 (segments, not strings)', isNewer('0.10', '0.9') === true);
+check('update: a v prefix is tolerated', isNewer('v0.11', '0.10') === true);
+check('update: the same build is not an update', isNewer('0.10', '0.10') === false);
+check('update: an older tag is never offered', isNewer('0.9', '0.10') === false && isNewer('0.2', '1.0') === false);
+check('update: 1.0 beats 0.99', isNewer('1.0', '0.99') === true);
 
 // --- the narrator remembers the campaign, not just this week ---
 let long = createGame('agitator', 0.5);

@@ -8,7 +8,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "sim": "tsc src/types.ts src/nav.ts src/save.ts src/data/india.ts src/data/characters.ts src/data/factions.ts src/data/events.ts src/engine/util.ts src/engine/gameState.ts src/engine/score.ts src/engine/reducer.ts src/engine/resolver.ts src/engine/tick.ts src/llm/prompts.ts src/llm/adapters.ts src/llm/refusalRescue.ts src/llm/fallback.ts src/llm/gameMaster.ts --outDir .simbuild --module commonjs --target es2020 --esModuleInterop --skipLibCheck && cp scripts/smoke.js scripts/focused.js .simbuild && node .simbuild/smoke.js",
+    "sim": "tsc src/types.ts src/nav.ts src/update.ts src/save.ts src/data/india.ts src/data/characters.ts src/data/factions.ts src/data/events.ts src/engine/util.ts src/engine/gameState.ts src/engine/score.ts src/engine/reducer.ts src/engine/resolver.ts src/engine/tick.ts src/llm/prompts.ts src/llm/adapters.ts src/llm/refusalRescue.ts src/llm/fallback.ts src/llm/gameMaster.ts --outDir .simbuild --module commonjs --target es2020 --esModuleInterop --skipLibCheck && cp scripts/smoke.js scripts/focused.js .simbuild && node .simbuild/smoke.js",
     "web:deploy": "expo export --platform web && cp -r .vercel dist/ && URL=$(npx --yes vercel@latest deploy dist --prod --yes --scope tolovegrovers-projects | grep -oE \"rajya-[a-z0-9]+-tolovegrovers-projects.vercel.app\" | head -1) && npx --yes vercel@latest alias set \"$URL\" rajya-sigma.vercel.app --scope tolovegrovers-projects",
     "invite": "node scripts/invite.mjs"
   },

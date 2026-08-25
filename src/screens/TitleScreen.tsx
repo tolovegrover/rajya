@@ -6,6 +6,7 @@ import { CharacterPortrait } from '../components/CharacterPortrait';
 import { FancyButton } from '../components/FancyButton';
 import { CHARACTERS } from '../data/characters';
 import { LanguageBar } from '../components/LanguageBar';
+import { UpdateBanner } from '../components/UpdateBanner';
 import { t } from '../i18n';
 import { F, GOLD, ORANGE } from '../theme';
 
@@ -49,6 +50,8 @@ export function TitleScreen() {
         </View>
 
         <Text style={s.blurb}>{t('title.blurb')}</Text>
+
+        <UpdateBanner />
 
         <View style={{ alignSelf: 'stretch', gap: 12 }}>
           {live && (
