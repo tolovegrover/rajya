@@ -12,25 +12,25 @@ import { displayName } from '../llm/prompts';
 import { t } from '../i18n';
 
 const COMPAT_PRESETS = [
-  { label: 'opencode Zen', url: 'https://opencode.ai/zen/v1' },
-  { label: 'OpenRouter', url: 'https://openrouter.ai/api/v1' },
-  { label: 'OpenAI', url: 'https://api.openai.com/v1' },
-  { label: 'Groq', url: 'https://api.groq.com/openai/v1' },
-  { label: 'DeepSeek', url: 'https://api.deepseek.com/v1' },
-  { label: 'Mistral', url: 'https://api.mistral.ai/v1' },
-  { label: 'Together', url: 'https://api.together.xyz/v1' },
-  { label: 'xAI Grok', url: 'https://api.x.ai/v1' },
-  { label: 'Perplexity', url: 'https://api.perplexity.ai' },
-  { label: 'Fireworks', url: 'https://api.fireworks.ai/inference/v1' },
-  { label: 'Cerebras', url: 'https://api.cerebras.ai/v1' },
-  { label: 'Sarvam (Indic)', url: 'https://api.sarvam.ai/v1' },
-  { label: 'GitHub Models', url: 'https://models.inference.ai.azure.com' },
-  { label: 'Ollama (local)', url: 'http://localhost:11434/v1' },
-  { label: 'LM Studio', url: 'http://localhost:1234/v1' },
+  { label: 'opencode Zen', url: 'https://opencode.ai/zen/v1', model: 'claude-sonnet-5', models: ['claude-sonnet-5', 'claude-opus-5', 'claude-haiku-4-5'] },
+  { label: 'OpenRouter', url: 'https://openrouter.ai/api/v1', model: 'anthropic/claude-sonnet-5', models: ['anthropic/claude-sonnet-5', 'openai/gpt-4o-mini', 'google/gemini-2.5-flash', 'qwen/qwen-plus'] },
+  { label: 'OpenAI', url: 'https://api.openai.com/v1', model: 'gpt-4o-mini', models: ['gpt-4o-mini', 'gpt-4o', 'o3-mini'] },
+  { label: 'Groq', url: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile', models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'] },
+  { label: 'DeepSeek', url: 'https://api.deepseek.com/v1', model: 'deepseek-chat', models: ['deepseek-chat', 'deepseek-reasoner'] },
+  { label: 'Mistral', url: 'https://api.mistral.ai/v1', model: 'mistral-large-latest', models: ['mistral-large-latest', 'mistral-small-latest'] },
+  { label: 'Together', url: 'https://api.together.xyz/v1', model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo', models: ['meta-llama/Llama-3.3-70B-Instruct-Turbo', 'meta-llama/Llama-3.1-8B-Instruct-Turbo'] },
+  { label: 'xAI Grok', url: 'https://api.x.ai/v1', model: 'grok-4.6', models: ['grok-4.6', 'grok-4.5'] },
+  { label: 'Perplexity', url: 'https://api.perplexity.ai', model: 'sonar', models: ['sonar', 'sonar-pro'] },
+  { label: 'Fireworks', url: 'https://api.fireworks.ai/inference/v1', model: 'accounts/fireworks/models/llama-v3p3-70b-instruct', models: ['accounts/fireworks/models/llama-v3p3-70b-instruct'] },
+  { label: 'Cerebras', url: 'https://api.cerebras.ai/v1', model: 'llama3.3-70b', models: ['llama3.3-70b', 'llama3.1-8b'] },
+  { label: 'Sarvam (Indic)', url: 'https://api.sarvam.ai/v1', model: 'sarvam-2', models: ['sarvam-2', 'sarvam-1'] },
+  { label: 'GitHub Models', url: 'https://models.inference.ai.azure.com', model: 'gpt-4o-mini', models: ['gpt-4o-mini', 'Phi-4-mini-instruct'] },
+  { label: 'Ollama (local)', url: 'http://localhost:11434/v1', model: 'llama3.2', models: ['llama3.2', 'qwen2.5:7b'] },
+  { label: 'LM Studio', url: 'http://localhost:1234/v1', model: 'local-model', models: ['local-model'] },
 ];
 
-const GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash-lite'];
-const CLAUDE_MODELS = ['claude-sonnet-4-5', 'claude-opus-4-1', 'claude-haiku-4-5'];
+const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.5-flash-lite'];
+const CLAUDE_MODELS = ['claude-sonnet-5', 'claude-opus-5', 'claude-haiku-4-5'];
 
 export function SettingsScreen() {
   const setScreen = useGame((g) => g.setScreen);
@@ -91,7 +91,7 @@ export function SettingsScreen() {
             <TextInput value={settings.anthropicKey} onChangeText={(v) => setSettings({ anthropicKey: v })} secureTextEntry placeholder="sk-ant-…" placeholderTextColor="#5f6f88" style={input()} autoCapitalize="none" autoCorrect={false} />
             <Text style={s.label}>{t('set.mainmodel')}</Text>
             {modelChips(CLAUDE_MODELS, settings.anthropicModel, (m) => setSettings({ anthropicModel: m }))}
-            <TextInput value={settings.anthropicModel} onChangeText={(v) => setSettings({ anthropicModel: v })} style={input()} autoCapitalize="none" autoCorrect={false} placeholder="claude-sonnet-4-5" />
+            <TextInput value={settings.anthropicModel} onChangeText={(v) => setSettings({ anthropicModel: v })} style={input()} autoCapitalize="none" autoCorrect={false} placeholder="claude-sonnet-5" />
             <Text style={s.label}>{t('set.flashmodel')}</Text>
             <TextInput value={settings.flashModel} onChangeText={(v) => setSettings({ flashModel: v })} style={input()} autoCapitalize="none" autoCorrect={false} placeholder="claude-haiku-4-5" />
           </>
@@ -107,9 +107,9 @@ export function SettingsScreen() {
             <TextInput value={settings.geminiKey} onChangeText={(v) => setSettings({ geminiKey: v })} secureTextEntry placeholder="AIza…" placeholderTextColor="#5f6f88" style={input()} autoCapitalize="none" autoCorrect={false} />
             <Text style={s.label}>{t('set.mainmodel')}</Text>
             {modelChips(GEMINI_MODELS, settings.geminiModel, (m) => setSettings({ geminiModel: m }))}
-            <TextInput value={settings.geminiModel} onChangeText={(v) => setSettings({ geminiModel: v })} style={input()} autoCapitalize="none" autoCorrect={false} placeholder="gemini-2.0-flash" />
+            <TextInput value={settings.geminiModel} onChangeText={(v) => setSettings({ geminiModel: v })} style={input()} autoCapitalize="none" autoCorrect={false} placeholder="gemini-2.5-flash" />
             <Text style={s.label}>{t('set.flashmodel')}</Text>
-            <TextInput value={settings.flashModel} onChangeText={(v) => setSettings({ flashModel: v })} style={input()} autoCapitalize="none" autoCorrect={false} placeholder="gemini-2.0-flash-lite" />
+            <TextInput value={settings.flashModel} onChangeText={(v) => setSettings({ flashModel: v })} style={input()} autoCapitalize="none" autoCorrect={false} placeholder="gemini-2.5-flash-lite" />
           </>
         )}
 
@@ -118,7 +118,7 @@ export function SettingsScreen() {
             <Text style={s.label}>{t('set.baseurl')}</Text>
             <View style={s.row}>
               {COMPAT_PRESETS.map((p) => (
-                <Pressable key={p.label} style={[s.chip, settings.compatBaseUrl === p.url && s.chipSel]} onPress={() => setSettings({ compatBaseUrl: p.url })}>
+                <Pressable key={p.label} style={[s.chip, settings.compatBaseUrl === p.url && s.chipSel]} onPress={() => setSettings({ compatBaseUrl: p.url, compatModel: p.model })}>
                   <Text style={[s.chipText, settings.compatBaseUrl === p.url && { color: '#0b0f1a' }]}>{p.label}</Text>
                 </Pressable>
               ))}
@@ -127,7 +127,20 @@ export function SettingsScreen() {
             <Text style={s.label}>{t('set.apikey')}</Text>
             <TextInput value={settings.compatKey} onChangeText={(v) => setSettings({ compatKey: v })} secureTextEntry style={input()} autoCapitalize="none" autoCorrect={false} />
             <Text style={s.label}>{t('set.mainmodel')}</Text>
-            <TextInput value={settings.compatModel} onChangeText={(v) => setSettings({ compatModel: v })} style={input()} autoCapitalize="none" autoCorrect={false} placeholder="gpt-4o-mini / llama-3.3-70b / …" />
+            <TextInput value={settings.compatModel} onChangeText={(v) => setSettings({ compatModel: v })} style={input()} autoCapitalize="none" autoCorrect={false} placeholder="model id — pick a provider above for suggestions" placeholderTextColor="#5f6f88" />
+            {(() => {
+              const active = COMPAT_PRESETS.find((p) => p.url === settings.compatBaseUrl);
+              if (!active) return null;
+              return (
+                <View style={s.row}>
+                  {active.models.map((m) => (
+                    <Pressable key={m} style={[s.chip, settings.compatModel === m && s.chipSel]} onPress={() => setSettings({ compatModel: m })}>
+                      <Text style={[s.chipText, settings.compatModel === m && { color: '#0b0f1a' }]} numberOfLines={1}>{m.replace(/^accounts\/fireworks\/models\//, '')}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              );
+            })()}
             <Text style={s.label}>{t('set.flashmodel')}</Text>
             <TextInput value={settings.flashModel} onChangeText={(v) => setSettings({ flashModel: v })} style={input()} autoCapitalize="none" autoCorrect={false} />
           </>

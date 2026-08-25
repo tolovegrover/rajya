@@ -1,4 +1,3 @@
-import { Platform } from 'react-native';
 import { LLMSettings } from '../types';
 
 export interface LLMRequest {
@@ -13,7 +12,7 @@ export interface LLMClient {
 }
 
 const DEFAULT_MAX = 1200;
-const IS_WEB = Platform.OS === 'web';
+const IS_WEB = typeof globalThis !== 'undefined' && 'window' in globalThis && 'document' in globalThis;
 const RELAY = 'https://lovegrover.com/api/llm';
 
 export class HttpError extends Error {
@@ -152,8 +151,8 @@ export function geminiClient(settings: LLMSettings, model: string): LLMClient {
 }
 
 export function mainClient(settings: LLMSettings): LLMClient | null {
-  if (settings.provider === 'anthropic' && settings.anthropicKey) return claudeClient(settings, settings.anthropicModel || 'claude-sonnet-4-5');
-  if (settings.provider === 'gemini' && settings.geminiKey) return geminiClient(settings, settings.geminiModel || 'gemini-2.0-flash');
+  if (settings.provider === 'anthropic' && settings.anthropicKey) return claudeClient(settings, settings.anthropicModel || 'claude-sonnet-5');
+  if (settings.provider === 'gemini' && settings.geminiKey) return geminiClient(settings, settings.geminiModel || 'gemini-2.5-flash');
   if (settings.provider === 'openai-compat' && settings.compatBaseUrl) {
     const model = settings.compatModel || 'gpt-4o-mini';
     return compatClient(settings.compatBaseUrl, settings.compatKey || 'none', model);
@@ -169,7 +168,7 @@ export function flashClient(settings: LLMSettings): LLMClient | null {
     return m ? claudeClient(settings, m) : null;
   }
   if (settings.provider === 'gemini' && settings.geminiKey) {
-    return geminiClient(settings, settings.flashModel || settings.geminiModel || 'gemini-2.0-flash-lite');
+    return geminiClient(settings, settings.flashModel || settings.geminiModel || 'gemini-2.5-flash-lite');
   }
   if (settings.provider === 'openai-compat' && settings.compatBaseUrl) {
     const m = settings.flashModel || settings.compatModel2 || settings.compatModel || 'gpt-4o-mini';

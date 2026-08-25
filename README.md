@@ -44,8 +44,8 @@ The game ships three narrator modes (Settings → AI SETUP, keys are stored on-d
 
 | Mode | What to enter |
 |---|---|
-| **Claude** | Anthropic API key (`sk-ant-…`), model e.g. `claude-sonnet-4-5` |
-| **Gemini** | Google AI Studio key (`AIza…`), model e.g. `gemini-2.0-flash` |
+| **Claude** | Anthropic API key (`sk-ant-…`), model e.g. `claude-sonnet-5` |
+| **Gemini** | Google AI Studio key (`AIza…`), model e.g. `gemini-2.5-flash` |
 | **Compatible** | Any OpenAI-compatible endpoint: opencode Zen, OpenRouter, OpenAI, Groq, DeepSeek, Mistral, Together, xAI Grok, Perplexity, Fireworks, Cerebras, Sarvam, GitHub Models, Ollama, LM Studio… base URL + key + model |
 | **Offline** | Nothing — the procedural engine runs beats, dilemmas and endings locally |
 
