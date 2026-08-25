@@ -240,3 +240,12 @@ export interface ActionOutcome {
   ops: WorldOp[];
   odds: number;
 }
+
+export interface FreeMovePrompt {
+  kind: 'confirm' | 'vague';
+  text: string;
+  cost: number;
+  odds: number;
+  region: string;
+  reason?: 'short' | 'noaction' | 'generic';
+}

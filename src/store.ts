@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  GameState, LLMSettings, Screen, BeatResult, MapFx, RescueLogEntry, DialogueLine, WorldOp, Character, GameEvent,
+  GameState, LLMSettings, Screen, BeatResult, MapFx, RescueLogEntry, DialogueLine, WorldOp, Character, GameEvent, FreeMovePrompt,
 } from './types';
 import { createGame } from './engine/gameState';
 import { t, setLang } from './i18n';
 import { applyOps, opTitle } from './engine/reducer';
-import { resolveAction, resolveFreeMove, FREE_MOVE_COST, ACTIONS, phaseOf } from './engine/resolver';
+import { resolveAction, resolveFreeMove, assessFreeMove, FREE_MOVE_COST, ACTIONS, phaseOf } from './engine/resolver';
 import { tick } from './engine/tick';
 import { askGameMaster, GMContext } from './llm/gameMaster';
 import { hasAI } from './llm/adapters';
@@ -103,6 +103,7 @@ interface GameStore {
   screen: Screen;
   beat: BeatResult | null;
   pendingBeats: BeatResult[];
+  movePrompt: FreeMovePrompt | null;
   saved: SaveMeta | null;
   dialogueQueue: DialogueLine[];
   lastAmbient: { headline: string; at: number } | null;
@@ -129,7 +130,9 @@ interface GameStore {
   newGame: (role: GameState['role'], eta: number) => void;
   runTick: (silent?: boolean) => void;
   doAction: (actionId: string) => Promise<void>;
-  doFreeMove: (text: string) => Promise<void>;
+  proposeFreeMove: (text: string) => void;
+  confirmFreeMove: () => Promise<void>;
+  cancelFreeMove: () => void;
   requestEnding: () => Promise<void>;
   requestBeat: (kind: GMContext['kind'], region: string, actionLabel?: string, resolverHeadline?: string, resolverOps?: WorldOp[], freeText?: string) => Promise<void>;
   chooseDilemma: (index: number) => void;
@@ -168,6 +171,7 @@ export const useGame = create<GameStore>((set, get) => ({
   screen: 'title',
   beat: null,
   pendingBeats: [],
+  movePrompt: null,
   saved: null,
   dialogueQueue: [],
   lastAmbient: null,
@@ -230,7 +234,8 @@ export const useGame = create<GameStore>((set, get) => ({
       state: st,
       screen: 'game',
       beat: { beat: t('phase.0.text'), ticker: [], dialogue: [], ops: [], source: 'system' },
-      pendingBeats: [],
+  pendingBeats: [],
+  movePrompt: null,
   saved: null,
       dialogueQueue: [],
       lastAmbient: null,
@@ -325,13 +330,34 @@ export const useGame = create<GameStore>((set, get) => ({
     await get().requestBeat('action', targetRegion, label, outcome.headline, outcome.ops);
   },
 
-  async doFreeMove(text) {
+  proposeFreeMove(text) {
     const { state, targetRegion, pendingBeats } = get();
     const said = text.trim();
     if (!state || !said || state.ending || get().thinking || get().beat || pendingBeats.length > 0) return;
-    if (state.influence < FREE_MOVE_COST) return;
-    const outcome = resolveFreeMove(state, said, targetRegion);
-    let s = { ...state, influence: Math.max(0, state.influence - FREE_MOVE_COST) };
+    const a = assessFreeMove(state, said, targetRegion);
+    if (a.vague) {
+      set({ movePrompt: { kind: 'vague', text: said, cost: a.cost, odds: a.odds, region: targetRegion, reason: a.reason } });
+      return;
+    }
+    set({ movePrompt: { kind: 'confirm', text: said, cost: a.cost, odds: a.odds, region: targetRegion } });
+  },
+
+  cancelFreeMove() {
+    set({ movePrompt: null });
+  },
+
+  async confirmFreeMove() {
+    const { state, targetRegion, pendingBeats, movePrompt } = get();
+    if (!state || !movePrompt || movePrompt.kind !== 'confirm' || state.ending || get().thinking || get().beat || pendingBeats.length > 0) return;
+    const said = movePrompt.text.trim();
+    if (!said || state.influence < movePrompt.cost) {
+      set({ movePrompt: null });
+      return;
+    }
+    set({ movePrompt: null });
+    const assessment = assessFreeMove(state, said, targetRegion);
+    const outcome = resolveFreeMove(state, said, targetRegion, assessment);
+    let s = { ...state, influence: Math.max(0, state.influence - assessment.cost) };
     const applied = applyOps(s, outcome.ops);
     s = applied.state;
     set({ state: s, fx: [...get().fx, ...fxFromOps(applied.applied, s.turn)].slice(-24) });

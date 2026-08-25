@@ -7,18 +7,20 @@ import { StatsBar } from '../components/StatsBar';
 import { NewsTicker } from '../components/NewsTicker';
 import { DialogueBox } from '../components/DialogueBox';
 import { EventCard } from '../components/EventCard';
+import { MovePromptModal } from '../components/MovePromptModal';
 import { ACTIONS, phaseOf } from '../engine/resolver';
 import { botPlan, botPickDilemma } from '../engine/bot';
 
 export function GameScreen() {
   const {
-    state, fx, ticker, thinking, beat, pendingBeats, dialogueQueue, lastAmbient, selectedRegion, targetRegion, autoplay,
+    state, fx, ticker, thinking, beat, pendingBeats, dialogueQueue, lastAmbient, selectedRegion, targetRegion, autoplay, movePrompt,
     runTick, doAction, dismissBeat, dismissAmbient, chooseDilemma, popDialogue, selectRegion, setTarget, setPaused, setScreen, setAutoplay,
+    proposeFreeMove, confirmFreeMove, cancelFreeMove,
     rescueLog,
   } = useGame();
-  const doFreeMove = useGame((g) => g.doFreeMove);
   const [move, setMove] = useState('');
   const tickNext = useRef(false);
+  const inputRef = useRef<TextInput>(null);
   useLang();
 
   useEffect(() => {
@@ -106,22 +108,23 @@ export function GameScreen() {
       <View style={s.actions}>
         <View style={s.moveRow}>
           <TextInput
+            ref={inputRef}
             value={move}
             onChangeText={setMove}
             placeholder={t('move.placeholder')}
             placeholderTextColor="#5f6f88"
             style={s.moveInput}
             multiline
-            editable={!thinking && !beat && !state.ending}
-            onSubmitEditing={() => { const v = move.trim(); if (v) { setMove(''); void doFreeMove(v); } }}
+            editable={!thinking && !beat && !state.ending && !movePrompt}
+            onSubmitEditing={() => { const v = move.trim(); if (v) proposeFreeMove(v); }}
           />
           <Pressable
             style={[s.moveBtn, (!move.trim() || state.influence < 4) && s.actionDisabled]}
             disabled={!move.trim() || thinking || !!beat || !!state.ending || state.influence < 4}
-            onPress={() => { const v = move.trim(); setMove(''); void doFreeMove(v); }}
+            onPress={() => { const v = move.trim(); if (v) proposeFreeMove(v); }}
           >
             <Text style={s.moveBtnText}>{t('move.send')}</Text>
-            <Text style={s.moveCost}>◎4</Text>
+            <Text style={s.moveCost}>◎4+</Text>
           </Pressable>
         </View>
         <Pressable
@@ -133,6 +136,18 @@ export function GameScreen() {
           <Text style={s.weekHint}>{t('week.hint')}</Text>
         </Pressable>
         <ScrollView horizontal contentContainerStyle={{ gap: 8, paddingHorizontal: 8 }} showsHorizontalScrollIndicator={false}>
+          <Pressable
+            style={s.actionBtn}
+            disabled={thinking || !!beat || !!state.ending}
+            onPress={() => {
+              inputRef.current?.focus();
+              if (!move.trim()) setMove(t('move.ex1'));
+            }}
+          >
+            <Text style={s.actionIcon}>✍️</Text>
+            <Text style={s.actionLabel}>{t('move.quick')}</Text>
+            <Text style={s.actionCost}>◎{t('move.from', { n: 4 })}</Text>
+          </Pressable>
           {actions.map((a) => (
             <Pressable
               key={a.id}
@@ -163,6 +178,15 @@ export function GameScreen() {
 
       {beat && (
         <EventCard beat={beat} state={state} onContinue={dismissBeat} onChoose={(i) => { chooseDilemma(i); dismissBeat(); }} />
+      )}
+
+      {movePrompt && !beat && (
+        <MovePromptModal
+          prompt={movePrompt}
+          state={state}
+          onConfirm={() => { setMove(''); void confirmFreeMove(); }}
+          onCancel={cancelFreeMove}
+        />
       )}
     </View>
   );

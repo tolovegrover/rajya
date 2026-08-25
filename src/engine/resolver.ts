@@ -52,11 +52,74 @@ export const ACTIONS: Record<PlayerRoleId, PlayerActionDef[]> = {
 /** Cost and odds for a move the player wrote themselves. Consequences come from the GM. */
 export const FREE_MOVE_COST = 4;
 
-export function resolveFreeMove(s: GameState, text: string, targetRegion: string): { ok: boolean; odds: number; headline: string; ops: WorldOp[] } {
+// Generic/metaphorical commands are refused as vague — a move must name an action.
+const MOVE_STOP = new Set([
+  'ok', 'okay', 'yes', 'no', 'haan', 'han', 'hmm', 'theek', 'thik', 'thik hai', 'theek hai',
+  'do it', 'karo', 'kar do', 'kijiye', 'i agree', 'accha', 'done', 'fine', 'whatever',
+  'win', 'jeet', 'jeet jao', 'win the match', 'win the game', 'jeet dilao', 'make me win',
+  'jitna ho sake', 'best karo', 'do something', 'kuch karo', 'kuch bhi karo', 'trust me',
+  'bharosa karo', 'aage badho', 'go ahead', 'continue', 'chalega', 'jaldi karo', 'anything',
+]);
+
+// Action words (English + Hindi) — a specific move must contain one of these.
+const MOVE_HINTS = [
+  'rally', 'protest', 'march', 'speech', 'bribe', 'pay', 'fund', 'arrest', 'raid', 'file',
+  'case', 'leak', 'expose', 'hack', 'buy', 'sell', 'block', 'strike', 'bandh', 'dharna',
+  'campaign', 'ad', 'tweet', 'post', 'publish', 'media', 'court', 'army', 'police',
+  'resign', 'sack', 'fire', 'hire', 'appoint', 'alliance', 'coalition', 'quit', 'audit',
+  'investigate', 'transfer', 'freeze', 'release', 'apologize', 'announce', 'scam', 'sting',
+  'boycott', 'slogan', 'poster', 'jail', 'bail', 'ban', 'repeal', 'law', 'bill', 'order',
+  'रैली', 'प्रदर्शन', 'धरना', 'भाषण', 'रिश्वत', 'गिरफ्तार', 'छापा', 'लीक', 'खबर', 'अदालत',
+  'मीडिया', 'फौज', 'पुलिस', 'इस्तीफा', 'गठबंधन', 'घोटाला', 'हड़ताल', 'बंद', 'योजना',
+  'घोषणा', 'जांच', 'मुकदमा', 'कानून', 'विधेयक', 'आदेश', 'जमानत', 'जेल', 'बहिष्कार',
+  'नारा', 'पोस्टर', 'भर्ती', 'नियुक्ति', 'फंड', 'भुगतान', 'बर्खास्त', 'त्यागपत्र',
+];
+
+export interface FreeMoveAssessment {
+  vague: boolean;
+  reason?: 'short' | 'noaction' | 'generic';
+  cost: number;
+  risk: number;
+  base: number;
+  odds: number;
+}
+
+export function assessFreeMove(s: GameState, text: string, targetRegion: string): FreeMoveAssessment {
+  const rg = s.regions[targetRegion] ?? s.regions['uttardesh'];
+  const said = text.trim().toLowerCase();
+  const words = said.split(/\s+/).filter(Boolean);
+  const hintHit = MOVE_HINTS.some((h) => said.includes(h));
+  const stopHit =
+    MOVE_STOP.has(said) || (words.length <= 3 && words.some((w) => MOVE_STOP.has(w)));
+  let reason: FreeMoveAssessment['reason'];
+  let vague = false;
+  if (said.length < 6 || words.length < 2) {
+    vague = true;
+    reason = 'short';
+  } else if (!hintHit) {
+    vague = true;
+    reason = 'noaction';
+  } else if (stopHit) {
+    vague = true;
+    reason = 'generic';
+  }
+  const risk = rg.unrest >= 80 ? 6 : rg.unrest >= 60 ? 3 : 0;
+  const cost = FREE_MOVE_COST + risk;
+  const base = 0.5 + s.influence / 260 - rg.unrest / 320 - (vague ? 0.18 : 0);
+  const odds = clamp(Math.round(base * 100), 5, 92);
+  return { vague, reason, cost, risk, base, odds };
+}
+
+export function resolveFreeMove(
+  s: GameState,
+  text: string,
+  targetRegion: string,
+  assessment?: FreeMoveAssessment
+): { ok: boolean; odds: number; headline: string; ops: WorldOp[] } {
   const rg = s.regions[targetRegion] ?? s.regions['uttardesh'];
   const said = text.trim().slice(0, 200);
-  const base = 0.5 + s.influence / 260 - rg.unrest / 320;
-  const odds = clamp(Math.round((base + noise(etaFor(s) * 0.25)) * 100), 5, 92);
+  const a = assessment ?? assessFreeMove(s, text, targetRegion);
+  const odds = clamp(Math.round((a.base + noise(etaFor(s) * 0.25)) * 100), 5, 92);
   const ok = rand() * 100 <= odds;
   return {
     ok,
